@@ -1,39 +1,38 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Form, Input, Button, Checkbox, Card, Alert, message, Typography } from "antd";
+import { UserOutlined, LockOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import authService from "../services/authService";
 
+const { Title, Text } = Typography;
+
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    
-    if (!username || !password) {
-      setError("Vui lòng nhập đầy đủ thông tin");
-      return;
-    }
-    
+  // Ant Design tự động gom dữ liệu form vào object 'values'
+  const onFinish = async (values) => {
+    setErrorMsg("");
     setLoading(true);
 
     try {
-      // Gọi API đăng nhập
-      const userData = await authService.login(username, password);
+      // values.username và values.password được lấy tự động từ Form.Item name
+      const userData = await authService.login(values.username, values.password);
       
-      // Lưu token và thông tin user vào localStorage
       authService.saveUserData(userData);
+      
+      if (values.remember) {
+        localStorage.setItem("remember_user", values.username);
+      }
 
-      // Redirect về dashboard
+      message.success("Đăng nhập thành công!");
       navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
-      setError(
+      setErrorMsg(
         err.response?.data?.message || 
-        "Đăng nhập thất bại. Vui lòng kiểm tra lại username và password."
+        "Tài khoản hoặc mật khẩu không chính xác."
       );
     } finally {
       setLoading(false);
@@ -41,70 +40,112 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#12c2e9] via-[#c471ed] to-[#f64f59] p-4">
-      {/* Logo Unica */}
-      <div className="mb-8">
-        <h1 className="text-5xl font-extrabold text-white tracking-tighter">
-          unica
-        </h1>
-      </div>
-
-      <div className="bg-white p-10 rounded-[20px] shadow-2xl w-full max-w-md">
-        <h2 className="text-xl font-bold mb-6 text-center text-gray-700 uppercase tracking-wide">
-          Đăng Nhập
-        </h2>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-500 text-sm rounded-lg border border-red-100">
-            {error}
+    <div className="min-h-screen flex bg-[#f0f2f5]">
+      {/* LEFT SIDE: Intro / Branding (Phần trang trí) */}
+      <div className="hidden lg:flex w-1/2 bg-[#001529] relative flex-col justify-between p-16 text-white overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 text-3xl font-bold mb-6">
+            <SafetyCertificateOutlined className="text-[#1890ff]" />
+            <span>UNICA FINANCE</span>
           </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-              placeholder="Nhập số điện thoại hoặc email"
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-              placeholder="Nhập mật khẩu"
-              disabled={loading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-[#34aadc] hover:bg-[#2986ad] text-white py-3 rounded-md font-bold text-lg shadow-lg transition-colors uppercase disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? "Đang xử lý..." : "Đăng Nhập"}
-          </button>
-        </form>
-
-        {/* Footer Links */}
-        <div className="mt-8 text-center text-sm space-y-2">
-          <p className="text-gray-600">
-            Bạn chưa có tài khoản?{" "}
-            <a href="#" className="text-gray-800 font-bold hover:underline">
-              Đăng ký mới
-            </a>
-          </p>
-          <p>
-            <a href="#" className="text-red-500 hover:underline">
-              Quên mật khẩu?
-            </a>
+          <p className="text-gray-400 text-lg max-w-md">
+            Hệ thống quản trị tài chính tập trung, bảo mật và hiệu quả dành cho doanh nghiệp.
           </p>
         </div>
+
+        <div className="relative z-10">
+          <img 
+            src="https://gw.alipayobjects.com/zos/rmsportal/gVAKqIsuJCdbWQvYhvNM.png" 
+            alt="Finance Illustration" 
+            className="w-3/4 mx-auto drop-shadow-2xl"
+          />
+        </div>
+        
+        <div className="relative z-10 text-gray-400 text-sm">
+          © 2024 Unica Finance Corp. All rights reserved.
+        </div>
+      </div>
+
+      {/* RIGHT SIDE: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
+        <Card 
+          className="w-full max-w-[400px] shadow-lg border-gray-100" 
+          bordered={false}
+        >
+          <div className="text-center mb-8">
+            <Title level={3} style={{ color: '#001529', marginBottom: 5 }}>Đăng Nhập</Title>
+            <Text type="secondary">Chào mừng quay trở lại hệ thống</Text>
+          </div>
+
+          {errorMsg && (
+            <Alert
+              message="Đăng nhập thất bại"
+              description={errorMsg}
+              type="error"
+              showIcon
+              className="mb-6"
+            />
+          )}
+
+          <Form
+            name="login_form"
+            initialValues={{ remember: true }}
+            onFinish={onFinish}
+            layout="vertical"
+            size="large"
+          >
+            <Form.Item
+              name="username"
+              rules={[
+                { required: true, message: 'Vui lòng nhập Email hoặc Số điện thoại!' },
+                { type: 'email', message: 'Email không hợp lệ!', warningOnly: true }, // Optional: cảnh báo nếu không phải email
+              ]}
+            >
+              <Input 
+                prefix={<UserOutlined className="text-gray-400" />} 
+                placeholder="Email hoặc Số điện thoại" 
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="password"
+              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+            >
+              <Input.Password
+                prefix={<LockOutlined className="text-gray-400" />}
+                placeholder="Mật khẩu"
+              />
+            </Form.Item>
+
+            <div className="flex justify-between items-center mb-6">
+              <Form.Item name="remember" valuePropName="checked" noStyle>
+                <Checkbox>Ghi nhớ đăng nhập</Checkbox>
+              </Form.Item>
+              <a className="text-[#1890ff] hover:underline font-medium" href="#">
+                Quên mật khẩu?
+              </a>
+            </div>
+
+            <Form.Item>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                className="w-full h-10 font-semibold bg-[#1890ff]"
+                loading={loading}
+              >
+                ĐĂNG NHẬP
+              </Button>
+            </Form.Item>
+
+            <div className="text-center mt-4">
+              <Text type="secondary">Bạn chưa có tài khoản? </Text>
+              <a href="#" className="font-semibold text-[#1890ff]">Đăng ký ngay</a>
+            </div>
+          </Form>
+        </Card>
       </div>
     </div>
   );
