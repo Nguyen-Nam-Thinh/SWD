@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import authService from "../services/authService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = authService.getUserData();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    authService.logout();
     navigate("/login");
   };
 
@@ -26,14 +26,28 @@ const Dashboard = () => {
 
       <div className="container mx-auto mt-8 p-4">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold mb-4">Chào mừng!</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            Chào mừng, {user?.fullName || user?.username}!
+          </h2>
           <p className="text-gray-600">
             Đây là trang dashboard được bảo vệ bởi ProtectedRoute.
           </p>
-          {user.email && (
-            <p className="mt-4 text-gray-700">
-              Email: <span className="font-semibold">{user.email}</span>
-            </p>
+
+          {user && (
+            <div className="mt-4 space-y-2">
+              <p className="text-gray-700">
+                <span className="font-semibold">Username:</span> {user.username}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Họ tên:</span> {user.fullName}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Vai trò:</span>
+                <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  {user.role}
+                </span>
+              </p>
+            </div>
           )}
 
           <div className="mt-8 p-4 bg-blue-50 rounded-lg">
@@ -42,6 +56,7 @@ const Dashboard = () => {
               <li>Route này chỉ truy cập được khi đã đăng nhập</li>
               <li>Nếu chưa đăng nhập, sẽ redirect về /login</li>
               <li>Token được lưu trong localStorage</li>
+              <li>API: http://51.210.176.94:5000</li>
             </ul>
           </div>
         </div>
