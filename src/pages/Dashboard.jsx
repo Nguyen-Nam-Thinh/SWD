@@ -1,46 +1,78 @@
-import authService from "../services/authService";
+import { Card, Col, Row, Statistic, Table, Tag } from 'antd';
+import { UserOutlined, BankOutlined, FileProtectOutlined, ArrowUpOutlined } from '@ant-design/icons';
 
-const DashboardHome = () => {
-  const user = authService.getUserData();
+const Dashboard = () => {
+  // Dữ liệu giả lập cho bảng Audit Log
+  const recentLogs = [
+    { key: 1, user: 'admin', action: 'Approved Report', time: '10:30 AM', status: 'success' },
+    { key: 2, user: 'manager_01', action: 'Upload File', time: '09:15 AM', status: 'processing' },
+    { key: 3, user: 'staff_02', action: 'Login Failed', time: '08:45 AM', status: 'error' },
+  ];
+
+  const columns = [
+    { title: 'Người dùng', dataIndex: 'user', key: 'user' },
+    { title: 'Hành động', dataIndex: 'action', key: 'action' },
+    { title: 'Thời gian', dataIndex: 'time', key: 'time' },
+    { 
+      title: 'Trạng thái', 
+      dataIndex: 'status', 
+      render: status => (
+        <Tag color={status === 'error' ? 'red' : status === 'success' ? 'green' : 'blue'}>
+          {status.toUpperCase()}
+        </Tag>
+      ) 
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">
-          Xin chào, {user?.fullName}! 👋
-        </h1>
-        <p className="text-slate-500">
-          Đây là bảng tổng quan tình hình tài chính của bạn hôm nay.
-        </p>
+      {/* 1. Phần Thống kê (Statistic Cards) */}
+      <Row gutter={16}>
+        <Col span={8}>
+          <Card bordered={false} className="shadow-sm">
+            <Statistic 
+              title="Tổng số User" 
+              value={1128} 
+              prefix={<UserOutlined />} 
+              valueStyle={{ color: '#3f8600' }}
+            />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card bordered={false} className="shadow-sm">
+            <Statistic 
+              title="Tổng số Công ty" 
+              value={93} 
+              prefix={<BankOutlined />} 
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card bordered={false} className="shadow-sm">
+            <Statistic 
+              title="Báo cáo đã duyệt" 
+              value={456} 
+              prefix={<FileProtectOutlined />} 
+              suffix={<span className="text-xs text-gray-400">/ 500</span>}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-           {/* Ví dụ về các thẻ thống kê */}
-           <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-              <h3 className="text-blue-600 font-semibold mb-1">Số dư khả dụng</h3>
-              <p className="text-3xl font-bold text-slate-900">12,500,000 ₫</p>
-           </div>
-           <div className="bg-green-50 p-6 rounded-xl border border-green-100">
-              <h3 className="text-green-600 font-semibold mb-1">Doanh thu tháng</h3>
-              <p className="text-3xl font-bold text-slate-900">45,200,000 ₫</p>
-           </div>
-           <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
-              <h3 className="text-purple-600 font-semibold mb-1">Khách hàng mới</h3>
-              <p className="text-3xl font-bold text-slate-900">128</p>
-           </div>
+      {/* 2. Biểu đồ (Placeholder) */}
+      <Card title="Lượng truy cập & Upload (7 ngày qua)" bordered={false} className="shadow-sm">
+        <div className="h-64 bg-slate-50 flex items-center justify-center border border-dashed border-slate-300 rounded-lg text-slate-400">
+          [Khu vực hiển thị Biểu đồ Chart.js hoặc Recharts]
         </div>
-      </div>
-      
-      {/* Thông tin kỹ thuật (từ code cũ của bạn) */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="font-bold text-lg mb-4 text-slate-800">Thông tin phiên làm việc</h3>
-        <ul className="list-disc list-inside text-slate-600 space-y-2">
-           <li>Username: <span className="font-mono bg-slate-100 px-2 py-1 rounded">{user?.username}</span></li>
-           <li>Role: <span className="font-mono bg-slate-100 px-2 py-1 rounded">{user?.role}</span></li>
-           <li>API Endpoint: http://51.210.176.94:5000</li>
-        </ul>
-      </div>
+      </Card>
+
+      {/* 3. Audit Log mới nhất */}
+      <Card title="Cảnh báo & Nhật ký mới nhất" bordered={false} className="shadow-sm">
+        <Table columns={columns} dataSource={recentLogs} pagination={false} size="small" />
+      </Card>
     </div>
   );
 };
 
-export default DashboardHome;
+export default Dashboard;

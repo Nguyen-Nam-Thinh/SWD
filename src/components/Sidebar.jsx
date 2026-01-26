@@ -1,28 +1,52 @@
 import { NavLink } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  PieChart, 
-  Wallet, 
-  Settings, 
-  Users, 
-  FileText 
+import {
+  LayoutDashboard,
+  PieChart,
+  Wallet,
+  Settings,
+  Users,
+  FileText,
 } from "lucide-react";
 
 const Sidebar = () => {
   const navItems = [
-    { path: "/dashboard", label: "Tổng quan", icon: <LayoutDashboard size={20} />, end: true },
-    { path: "/dashboard/analytics", label: "Phân tích", icon: <PieChart size={20} /> },
-    { path: "/dashboard/transactions", label: "Giao dịch", icon: <Wallet size={20} /> },
-    { path: "/dashboard/users", label: "Nhân sự", icon: <Users size={20} /> },
-    { path: "/dashboard/reports", label: "Báo cáo", icon: <FileText size={20} /> },
-    { path: "/dashboard/settings", label: "Cài đặt", icon: <Settings size={20} /> },
+    {
+      path: "/dashboard",
+      label: "Tổng quan",
+      icon: <LayoutDashboard size={20} />,
+      end: true,
+    },
+    { path: "/dashboard/users", label: "Users", icon: <Users size={20} /> },
+    {
+      path: "/dashboard/companies",
+      label: "Companies",
+      icon: <FileText size={20} />,
+    },
+    {
+      path: "/dashboard/validation",
+      label: "Validation Config",
+      icon: <PieChart size={20} />,
+    },
+    {
+      path: "/dashboard/audit",
+      label: "Audit Logs",
+      icon: <Wallet size={20} />,
+    },
+
+    {
+      path: "/dashboard/settings",
+      label: "Cài đặt",
+      icon: <Settings size={20} />,
+    },
   ];
 
   return (
     <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col fixed left-0 top-0 h-full">
       {/* Logo Area */}
       <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">U</div>
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
+          U
+        </div>
         <span className="text-lg font-bold tracking-wide">UNICA FINANCE</span>
       </div>
 
