@@ -5,10 +5,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import UserManagement from "./pages/UserManagement";
+import CompanyManagement from "./pages/CompanyManagement";
+import ValidationConfig from "./pages/ValidationConfig";
+import AuditLogs from "./pages/AuditLogs";
 
 // Layouts & Dashboard Pages
-import DashboardLayout from "./layouts/DashboardLayout"; 
-import DashboardHome from "./pages/Dashboard"; // File nội dung Dashboard cũ đã sửa lại
+import DashboardLayout from "./layouts/DashboardLayout";
+import Dashboard from "./pages/Dashboard"; // File nội dung Dashboard cũ đã sửa lại
 
 import "./App.css";
 
@@ -30,15 +34,15 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* Bước 2: Route index hiển thị DashboardHome khi vào đúng link /dashboard */}
-          <Route index element={<DashboardHome />} />
+          {/* Bước 2: Route index hiển thị Dashboard khi vào đúng link /dashboard */}
+          <Route index element={<Dashboard />} />
 
-          {/* Bước 3: Các route con (sẽ hiện trong <Outlet /> của Layout)
-          <Route path="analytics" element={<div className="p-4">Trang Phân Tích (Đang phát triển)</div>} />
-          <Route path="transactions" element={<div className="p-4">Trang Giao Dịch (Đang phát triển)</div>} />
-          <Route path="users" element={<div className="p-4">Quản Lý Nhân Sự (Đang phát triển)</div>} />
-          <Route path="reports" element={<div className="p-4">Báo Cáo (Đang phát triển)</div>} />
-          <Route path="settings" element={<div className="p-4">Cài Đặt Hệ Thống (Đang phát triển)</div>} /> */}
+          {/* Bước 3: Các route con (sẽ hiện trong <Outlet /> của Layout) */}
+          <Route path="users" element={<UserManagement />} />
+          <Route path="companies" element={<CompanyManagement />} />
+          <Route path="validation" element={<ValidationConfig />} />
+          <Route path="audit" element={<AuditLogs />} />
+          <Route path="settings" element={<div>Chưa làm</div>} />
         </Route>
 
         {/* --- 404 Page --- */}
