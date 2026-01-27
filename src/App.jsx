@@ -7,8 +7,10 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import UserManagement from "./pages/UserManagement";
 import CompanyManagement from "./pages/CompanyManagement";
+import MetricsManagement from "./pages/MetricsManagement";
 import ValidationConfig from "./pages/ValidationConfig";
 import AuditLogs from "./pages/AuditLogs";
+import FinancialReports from "./pages/FinancialReports";
 
 // Layouts & Dashboard Pages
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -23,6 +25,7 @@ function App() {
         {/* --- Public Routes --- */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/financial-reports" element={<FinancialReports />} />
 
         {/* --- Protected Dashboard Area --- */}
         {/* Bước 1: ProtectedRoute bảo vệ cả cụm Layout */}
@@ -40,6 +43,7 @@ function App() {
           {/* Bước 3: Các route con (sẽ hiện trong <Outlet /> của Layout) */}
           <Route path="users" element={<UserManagement />} />
           <Route path="companies" element={<CompanyManagement />} />
+          <Route path="metrics" element={<MetricsManagement />} />
           <Route path="validation" element={<ValidationConfig />} />
           <Route path="audit" element={<AuditLogs />} />
           <Route path="settings" element={<div>Chưa làm</div>} />
