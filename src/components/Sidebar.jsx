@@ -4,6 +4,7 @@ import {
   Users,
   Building2,
   FileText,
+  BarChart3,
   ShieldCheck,
   Settings,
 } from "lucide-react";
@@ -54,6 +55,11 @@ const Sidebar = () => {
       path: "/dashboard/reports",
       icon: <Building2 size={20} />,
       allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+    },
+    {
+      path: "/dashboard/metrics",
+      label: "Metrics",
+      icon: <BarChart3 size={20} />,
     },
     {
       label: "Validation Config",

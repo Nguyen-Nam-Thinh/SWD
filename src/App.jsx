@@ -6,10 +6,12 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import UserManagement from "./pages/UserManagement";
 import CompanyManagement from "./pages/CompanyManagement";
+import MetricsManagement from "./pages/MetricsManagement";
 import ValidationConfig from "./pages/ValidationConfig";
 import AuditLogs from "./pages/AuditLogs";
 import Upload from "./pages/Upload";
 import Reports from "./pages/Reports";
+import FinancialReports from "./pages/FinancialReports";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +31,7 @@ function App() {
         {/* --- Public Routes --- */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/financial-reports" element={<FinancialReports />} />
 
         {/* --- Protected Dashboard Area --- */}
 
@@ -53,6 +56,7 @@ function App() {
           <Route path="companies" element={<CompanyManagement />} />
           <Route path="upload" element={<Upload />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="metrics" element={<MetricsManagement />} />
           <Route path="validation" element={<ValidationConfig />} />
           <Route
             path="audit"
