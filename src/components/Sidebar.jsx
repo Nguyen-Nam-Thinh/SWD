@@ -1,67 +1,106 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  PieChart,
-  Wallet,
-  Settings,
   Users,
+  Building2,
   FileText,
+  ShieldCheck,
+  Settings,
 } from "lucide-react";
+import authService from "../services/authService";
+
+// Định nghĩa Role constant để tránh gõ sai
+const ROLES = {
+  ADMIN: "Admin",
+  STAFF: "Staff",
+  USER: "User",
+};
 
 const Sidebar = () => {
-  const navItems = [
-    {
-      path: "/dashboard",
-      label: "Tổng quan",
-      icon: <LayoutDashboard size={20} />,
-      end: true,
-    },
-    { path: "/dashboard/users", label: "Users", icon: <Users size={20} /> },
-    {
-      path: "/dashboard/companies",
-      label: "Companies",
-      icon: <FileText size={20} />,
-    },
-    {
-      path: "/dashboard/validation",
-      label: "Validation Config",
-      icon: <PieChart size={20} />,
-    },
-    {
-      path: "/dashboard/audit",
-      label: "Audit Logs",
-      icon: <Wallet size={20} />,
-    },
+  // 1. Lấy thông tin User hiện tại
+  const user = authService.getUserData();
+  const currentRole = user?.role; // Ví dụ: "Staff" hoặc "Admin"
 
+  // 2. Cấu hình danh sách Menu
+  // allowedRoles: Danh sách các vai trò ĐƯỢC PHÉP nhìn thấy menu này
+  const menuConfig = [
     {
-      path: "/dashboard/settings",
+      label: "Tổng quan",
+      path: "/dashboard",
+      icon: <LayoutDashboard size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+      end: true, // Để active đúng khi ở trang chủ dashboard
+    },
+    {
+      label: "Quản lý User",
+      path: "/dashboard/users",
+      icon: <Users size={20} />,
+      allowedRoles: [ROLES.ADMIN], // CHỈ ADMIN MỚI THẤY (Staff sẽ bị ẩn)
+    },
+    {
+      label: "Quản lý Công ty",
+      path: "/dashboard/companies",
+      icon: <Building2 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+    },
+    {
+      label: "Upload file",
+      path: "/dashboard/upload",
+      icon: <Building2 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+    },
+    {
+      label: "Quản lý Báo cáo",
+      path: "/dashboard/reports",
+      icon: <Building2 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+    },
+    {
+      label: "Validation Config",
+      path: "/dashboard/validation",
+      icon: <ShieldCheck size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
+    },
+    {
+      label: "Nhật ký hoạt động",
+      path: "/dashboard/audit",
+      icon: <FileText size={20} />,
+      allowedRoles: [ROLES.ADMIN], // CHỈ ADMIN MỚI THẤY
+    },
+    {
       label: "Cài đặt",
+      path: "/dashboard/settings",
       icon: <Settings size={20} />,
+      allowedRoles: [ROLES.ADMIN], // Giả sử chỉ Admin mới được chỉnh cài đặt
     },
   ];
 
+  // 3. Lọc menu: Chỉ giữ lại các item mà Role hiện tại có trong danh sách cho phép
+  const visibleMenu = menuConfig.filter((item) =>
+    item.allowedRoles.includes(currentRole),
+  );
+
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col fixed left-0 top-0 h-full">
-      {/* Logo Area */}
-      <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
-          U
-        </div>
-        <span className="text-lg font-bold tracking-wide">UNICA FINANCE</span>
+    <aside className="w-64 bg-[#001529] text-white min-h-screen flex flex-col fixed left-0 top-0 bottom-0 z-50">
+      {/* --- LOGO --- */}
+      <div className="h-16 flex items-center justify-center border-b border-gray-700">
+        <span className="text-xl font-bold tracking-wider text-white">
+          UNICA FINANCE
+        </span>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 py-6 px-3 space-y-1">
-        {navItems.map((item) => (
+      {/* --- MENU LIST --- */}
+      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+        {visibleMenu.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.end} // end=true để chỉ active khi đúng chính xác đường dẫn (dùng cho trang chủ)
+            end={item.end}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors font-medium text-sm ${
+              `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  ? "bg-[#1890ff] text-white shadow-md translate-x-1"
+                  : "text-gray-400 hover:bg-[#1890ff]/10 hover:text-white"
               }`
             }
           >
@@ -71,9 +110,21 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer Sidebar (Optional) */}
-      <div className="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-        v1.0.0 - Unica Corp
+      {/* --- USER INFO (Footer Sidebar) --- */}
+      <div className="p-4 border-t border-gray-700 bg-[#000c17]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold">
+            {user?.username?.charAt(0).toUpperCase() || "U"}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold truncate w-32">
+              {user?.username}
+            </span>
+            <span className="text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded w-fit">
+              {user?.role}
+            </span>
+          </div>
+        </div>
       </div>
     </aside>
   );

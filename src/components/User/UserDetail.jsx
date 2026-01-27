@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { Drawer, Descriptions, Tag, Spin, message } from "antd";
 import userService from "../../services/userService";
-import dayjs from "dayjs"; // Thư viện xử lý ngày tháng (thường đi kèm AntD)
+import dayjs from "dayjs";
 
 const UserDetail = ({ open, onCancel, userId }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Mỗi khi userId thay đổi và Drawer đang mở -> Gọi API lấy chi tiết mới nhất
   useEffect(() => {
     if (open && userId) {
       const fetchDetail = async () => {
@@ -32,7 +31,7 @@ const UserDetail = ({ open, onCancel, userId }) => {
       placement="right"
       onClose={onCancel}
       open={open}
-      width={500} // Độ rộng của Drawer
+      size={500}
     >
       {loading ? (
         <div className="flex justify-center items-center h-full">
@@ -69,7 +68,6 @@ const UserDetail = ({ open, onCancel, userId }) => {
           </Descriptions.Item>
 
           <Descriptions.Item label="Ngày tạo">
-            {/* Format ngày tháng nếu có created_at */}
             {user.createdAt
               ? dayjs(user.createdAt).format("DD/MM/YYYY HH:mm")
               : "-"}

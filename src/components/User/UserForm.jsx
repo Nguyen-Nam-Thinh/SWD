@@ -8,20 +8,15 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  // Khi modal mở hoặc data thay đổi -> Fill dữ liệu vào form
   useEffect(() => {
     if (open) {
       if (initialData) {
-        // Mode: EDIT
-        // Reset form và set giá trị cũ
         form.resetFields();
         form.setFieldsValue({
           ...initialData,
-          // Lưu ý: Backend thường không trả về password, nên field password để trống
           password: "",
         });
       } else {
-        // Mode: CREATE
         form.resetFields();
       }
     }
@@ -33,8 +28,6 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
       setLoading(true);
 
       if (initialData) {
-        // --- GỌI API UPDATE ---
-        // Nếu user không nhập password mới thì xóa field password khỏi payload
         if (!values.password) {
           delete values.password;
         }
@@ -42,16 +35,13 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
         await userService.updateUser(initialData.id, values);
         message.success("Cập nhật thông tin thành công!");
       } else {
-        // --- GỌI API CREATE ---
         await userService.createUser(values);
         message.success("Tạo người dùng mới thành công!");
       }
 
-      onSuccess(); // Báo cho trang cha reload lại bảng
-      onCancel(); // Đóng modal
+      onSuccess();
+      onCancel();
     } catch (error) {
-      // Lỗi validation form thì AntD tự hiện màu đỏ, không cần làm gì
-      // Chỉ handle lỗi từ API
       if (!error.errorFields) {
         message.error(error.response?.data?.message || "Có lỗi xảy ra!");
       }
@@ -85,7 +75,6 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
           label="Tên đăng nhập"
           rules={[{ required: true, message: "Vui lòng nhập username" }]}
         >
-          {/* Khi Edit thường không cho sửa Username */}
           <Input disabled={!!initialData} placeholder="VD: admin123" />
         </Form.Item>
 
@@ -125,7 +114,7 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
             name="isActive"
             label="Trạng thái"
             className="flex-1"
-            valuePropName="value" // Antd Select dùng value, Checkbox dùng checked
+            valuePropName="value"
           >
             <Select>
               <Select.Option value={true}>
@@ -144,7 +133,7 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
           <Select>
             <Select.Option value="User">User</Select.Option>
             <Select.Option value="Admin">Admin</Select.Option>
-            <Select.Option value="Manager">Manager</Select.Option>
+            <Select.Option value="Staff">Staff</Select.Option>
           </Select>
         </Form.Item>
       </Form>

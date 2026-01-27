@@ -45,7 +45,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <DashboardStats data={stats} loading={loading} />
       <DashboardChart loading={loading} />
-      {/* 2. COMPONENT LOG MỚI */}
+
       <RecentLogs data={stats.recentLogs} loading={loading} />
     </div>
   );

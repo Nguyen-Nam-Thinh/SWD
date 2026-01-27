@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Pages (Public)
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -9,12 +8,19 @@ import UserManagement from "./pages/UserManagement";
 import CompanyManagement from "./pages/CompanyManagement";
 import ValidationConfig from "./pages/ValidationConfig";
 import AuditLogs from "./pages/AuditLogs";
+import Upload from "./pages/Upload";
+import Reports from "./pages/Reports";
 
-// Layouts & Dashboard Pages
 import DashboardLayout from "./layouts/DashboardLayout";
-import Dashboard from "./pages/Dashboard"; // File nội dung Dashboard cũ đã sửa lại
+import Dashboard from "./pages/Dashboard";
 
 import "./App.css";
+
+const ROLES = {
+  ADMIN: "Admin",
+  STAFF: "Staff",
+  USER: "User",
+};
 
 function App() {
   return (
@@ -25,23 +31,37 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* --- Protected Dashboard Area --- */}
-        {/* Bước 1: ProtectedRoute bảo vệ cả cụm Layout */}
+
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.STAFF]}>
               <DashboardLayout />
             </ProtectedRoute>
           }
         >
-          {/* Bước 2: Route index hiển thị Dashboard khi vào đúng link /dashboard */}
           <Route index element={<Dashboard />} />
 
-          {/* Bước 3: Các route con (sẽ hiện trong <Outlet /> của Layout) */}
-          <Route path="users" element={<UserManagement />} />
+          <Route
+            path="users"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+                <UserManagement />
+              </ProtectedRoute>
+            }
+          />
           <Route path="companies" element={<CompanyManagement />} />
+          <Route path="upload" element={<Upload />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="validation" element={<ValidationConfig />} />
-          <Route path="audit" element={<AuditLogs />} />
+          <Route
+            path="audit"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+                <AuditLogs />
+              </ProtectedRoute>
+            }
+          />
           <Route path="settings" element={<div>Chưa làm</div>} />
         </Route>
 
