@@ -31,6 +31,19 @@ const authService = {
     return userStr ? JSON.parse(userStr) : null;
   },
 
+  // Refresh token khi token hết hạn
+  refreshToken: async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    const response = await api.post("/Auth/refresh-token", {
+      refreshToken,
+    });
+    return response.data;
+  },
+
   // Đăng xuất
   logout: () => {
     localStorage.removeItem("token");
