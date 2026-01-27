@@ -6,6 +6,7 @@ import {
   Settings,
   Users,
   FileText,
+  BarChart3,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -21,6 +22,11 @@ const Sidebar = () => {
       path: "/dashboard/companies",
       label: "Companies",
       icon: <FileText size={20} />,
+    },
+    {
+      path: "/dashboard/metrics",
+      label: "Metrics",
+      icon: <BarChart3 size={20} />,
     },
     {
       path: "/dashboard/validation",
