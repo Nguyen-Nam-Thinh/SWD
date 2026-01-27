@@ -60,6 +60,7 @@ const Sidebar = () => {
       path: "/dashboard/metrics",
       label: "Metrics",
       icon: <BarChart3 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
     },
     {
       label: "Validation Config",
