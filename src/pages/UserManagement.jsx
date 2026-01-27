@@ -64,6 +64,11 @@ const UserManagement = () => {
       key: "email",
     },
     {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+    },
+    {
       title: "Status",
       dataIndex: "isActive",
       key: "isActive",
