@@ -10,8 +10,9 @@ import MetricsManagement from "./pages/MetricsManagement";
 import ValidationConfig from "./pages/ValidationConfig";
 import AuditLogs from "./pages/AuditLogs";
 import Upload from "./pages/Upload";
-import Reports from "./pages/Reports";
+import Reports from "./pages/ReportsManager";
 import FinancialReports from "./pages/FinancialReports";
+import DraftReport from "./pages/DraftReport";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
@@ -55,6 +56,7 @@ function App() {
           />
           <Route path="companies" element={<CompanyManagement />} />
           <Route path="upload" element={<Upload />} />
+          <Route path="draft-report" element={<DraftReport />} />
           <Route path="reports" element={<Reports />} />
           <Route path="metrics" element={<MetricsManagement />} />
           <Route path="validation" element={<ValidationConfig />} />

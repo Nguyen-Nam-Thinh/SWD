@@ -51,6 +51,12 @@ const Sidebar = () => {
       allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
     },
     {
+      label: "Draft Report",
+      path: "/dashboard/draft-report",
+      icon: <Building2 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+    },
+    {
       label: "Quản lý Báo cáo",
       path: "/dashboard/reports",
       icon: <Building2 size={20} />,
