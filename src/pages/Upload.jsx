@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   Form,
-  Input,
   Select,
   DatePicker,
   Button,
@@ -11,49 +10,110 @@ import {
   Typography,
   Row,
   Col,
+  Divider,
+  InputNumber,
+  Space,
 } from "antd";
 import {
   InboxOutlined,
   CloudUploadOutlined,
   ArrowLeftOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import companyService from "../services/companyService";
+import reportService from "../services/reportService";
+import CompanyModal from "../components/company/CompanyModal"; // Import modal bạn đã có
 
 const { Dragger } = Upload;
 const { Title } = Typography;
+const { Option } = Select;
 
 const FinancialReportUpload = () => {
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
-  const onFinish = (values) => {
-    setLoading(true);
-    console.log("Form values:", values);
+  // State
+  const [loading, setLoading] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [companyLoading, setCompanyLoading] = useState(false);
+  const [companyForm] = Form.useForm(); // Form cho modal thêm công ty
 
-    // Giả lập gọi API upload
-    setTimeout(() => {
-      setLoading(false);
-      message.success("Tải lên báo cáo thành công!");
-      navigate("/dashboard/financial-reports"); // Quay lại trang quản lý
-    }, 1500);
+  // Load danh sách công ty khi vào trang
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      // Lấy danh sách lớn để hiển thị trong select (PageSize lớn hoặc logic search)
+      const res = await companyService.getCompanies({ pageSize: 100 });
+      setCompanies(res.items || []); // Giả sử API trả về { items: [...] }
+    } catch (error) {
+      message.error("Không thể tải danh sách công ty");
+    }
   };
 
-  const uploadProps = {
-    name: "file",
-    multiple: false,
-    action: "https://run.mocky.io/v3/435ba68c-f2a8-44c2-8e1e-27e1c784794b", // Mock API
-    onChange(info) {
-      const { status } = info.file;
-      if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
-      } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
+  // Xử lý khi Submit Upload
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+
+      // Map các trường theo yêu cầu Swagger
+      formData.append("CompanyId", values.companyId);
+      formData.append("Year", values.year.year()); // Lấy số năm từ dayjs
+      formData.append("Period", values.period);
+      formData.append("PeriodType", values.periodType);
+
+      // File object từ Antd Upload
+      if (values.file && values.file.length > 0) {
+        formData.append("File", values.file[0].originFileObj);
       }
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
+
+      await reportService.uploadReport(formData);
+      message.success("Tải lên báo cáo thành công!");
+      // navigate("/dashboard/draft-reports");
+    } catch (error) {
+      console.error(error);
+      message.error(error.response?.data?.message || "Lỗi khi tải lên báo cáo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- LOGIC THÊM CÔNG TY MỚI ---
+  const handleCreateCompany = async () => {
+    try {
+      const values = await companyForm.validateFields();
+      setCompanyLoading(true);
+
+      // Gọi API tạo công ty
+      const newCompany = await companyService.createCompany(values);
+
+      message.success("Thêm công ty mới thành công!");
+
+      // 1. Refresh danh sách
+      await fetchCompanies();
+
+      // 2. Tự động chọn công ty vừa tạo vào ô Select
+      // Giả sử API create trả về object công ty có id. Nếu không, phải gọi lại API get
+      if (newCompany && newCompany.id) {
+        form.setFieldsValue({ companyId: newCompany.id });
+      }
+
+      // 3. Đóng modal & reset form modal
+      setIsCompanyModalOpen(false);
+      companyForm.resetFields();
+    } catch (error) {
+      if (!error.errorFields) {
+        // Nếu không phải lỗi validate form
+        message.error("Không thể tạo công ty");
+      }
+    } finally {
+      setCompanyLoading(false);
+    }
   };
 
   return (
@@ -68,15 +128,14 @@ const FinancialReportUpload = () => {
       </Button>
 
       <Card
-        title={<Title level={4}>Tải lên Báo cáo tài chính mới</Title>}
-        bordered={false}
+        title={<Title level={4}>Tải lên Báo cáo tài chính</Title>}
         className="shadow-sm"
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ year: null }}
+          initialValues={{ periodType: "Quarterly" }}
         >
           <Row gutter={24}>
             <Col span={12}>
@@ -85,10 +144,33 @@ const FinancialReportUpload = () => {
                 label="Công ty"
                 rules={[{ required: true, message: "Vui lòng chọn công ty" }]}
               >
-                <Select placeholder="Chọn công ty...">
-                  <Select.Option value="fpt">FPT Corporation</Select.Option>
-                  <Select.Option value="vnm">Vinamilk</Select.Option>
-                  <Select.Option value="vcb">Vietcombank</Select.Option>
+                <Select
+                  placeholder="Chọn công ty..."
+                  showSearch
+                  optionFilterProp="children"
+                  // --- KEY POINT: Custom Dropdown ---
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: "8px 0" }} />
+                      <Space style={{ padding: "0 8px 4px" }}>
+                        <Button
+                          type="text"
+                          icon={<PlusOutlined />}
+                          onClick={() => setIsCompanyModalOpen(true)}
+                          className="text-blue-600 font-medium"
+                        >
+                          Thêm công ty mới ngay
+                        </Button>
+                      </Space>
+                    </>
+                  )}
+                >
+                  {companies.map((comp) => (
+                    <Option key={comp.id} value={comp.id}>
+                      {comp.companyName} ({comp.ticker})
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -108,62 +190,78 @@ const FinancialReportUpload = () => {
             </Col>
           </Row>
 
-          <Form.Item
-            name="reportName"
-            label="Tên báo cáo"
-            rules={[{ required: true, message: "Vui lòng nhập tên báo cáo" }]}
-          >
-            <Input placeholder="VD: Báo cáo tài chính Quý 1/2026" />
-          </Form.Item>
-
-          <Form.Item name="description" label="Mô tả / Ghi chú">
-            <Input.TextArea
-              rows={3}
-              placeholder="Ghi chú thêm về báo cáo này..."
-            />
-          </Form.Item>
-
-          <Form.Item label="File đính kèm (PDF/Excel)">
-            <Form.Item
-              name="file"
-              valuePropName="fileList"
-              getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-              noStyle
-              rules={[{ required: true, message: "Vui lòng đính kèm file" }]}
-            >
-              <Dragger
-                {...uploadProps}
-                className="bg-gray-50 border-dashed border-2 border-gray-300"
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item
+                name="periodType"
+                label="Loại kỳ báo cáo"
+                rules={[{ required: true }]}
               >
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined style={{ color: "#1890ff" }} />
-                </p>
-                <p className="ant-upload-text">
-                  Nhấp hoặc kéo thả file vào khu vực này
-                </p>
-                <p className="ant-upload-hint">
-                  Hỗ trợ định dạng .pdf, .xlsx. Dung lượng tối đa 10MB.
-                </p>
-              </Dragger>
-            </Form.Item>
+                <Select>
+                  <Option value="Quarterly">Theo Quý (Quarterly)</Option>
+                  <Option value="Yearly">Theo Năm (Yearly)</Option>
+                  <Option value="HalfYear">Bán niên (HalfYear)</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="period"
+                label="Kỳ số (VD: Quý 1 nhập 1)"
+                rules={[{ required: true, message: "Nhập kỳ số" }]}
+              >
+                <InputNumber min={1} max={4} className="w-full" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="file"
+            label="File báo cáo"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+            rules={[{ required: true, message: "Vui lòng đính kèm file" }]}
+          >
+            <Dragger
+              beforeUpload={() => false} // Chặn auto upload, để submit thủ công
+              maxCount={1}
+              accept=".pdf,.xlsx,.xls"
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">Kéo thả file hoặc nhấp để chọn</p>
+            </Dragger>
           </Form.Item>
 
-          <Form.Item className="mt-6 text-right">
+          <Form.Item className="text-right mt-6">
             <Button onClick={() => navigate(-1)} style={{ marginRight: 8 }}>
-              Hủy bỏ
+              Hủy
             </Button>
             <Button
               type="primary"
               htmlType="submit"
-              icon={<CloudUploadOutlined />}
               loading={loading}
-              size="large"
+              icon={<CloudUploadOutlined />}
             >
-              Tải lên báo cáo
+              Tải lên
             </Button>
           </Form.Item>
         </Form>
       </Card>
+
+      {/* --- MODAL THÊM CÔNG TY --- */}
+      <CompanyModal
+        open={isCompanyModalOpen}
+        form={companyForm}
+        loading={companyLoading}
+        onSubmit={handleCreateCompany}
+        onCancel={() => {
+          setIsCompanyModalOpen(false);
+          companyForm.resetFields();
+        }}
+        editingCompany={null} // null vì đang tạo mới
+      />
     </div>
   );
 };
