@@ -155,14 +155,17 @@ class AuditMiddleware {
   // Gửi audit log lên server
   async sendAuditToServer(auditLog) {
     // TODO: Implement sending audit log to backend
+    // Tạm thời disable để tránh lỗi tuần hoàn khi gọi API từ middleware
     // Chỉ gửi trong production và cho critical actions
-    if (import.meta.env.PROD && this.isCriticalAction(auditLog.action)) {
-      try {
-        // await api.post('/AuditLogs', auditLog);
-      } catch (error) {
-        console.error("Failed to send audit log:", error);
-      }
-    }
+    return; // Disable for now to prevent circular errors
+
+    // if (import.meta.env.PROD && this.isCriticalAction(auditLog.action)) {
+    //   try {
+    //     // await api.post('/AuditLogs', auditLog);
+    //   } catch (error) {
+    //     console.error("Failed to send audit log:", error);
+    //   }
+    // }
   }
 
   // Check if action is critical
