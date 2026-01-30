@@ -66,13 +66,13 @@ const Sidebar = () => {
       path: "/dashboard/metrics",
       label: "Metrics",
       icon: <BarChart3 size={20} />,
-      allowedRoles: [ROLES.ADMIN, ROLES.STAFF], // Admin & Staff đều thấy
+      allowedRoles: [ROLES.ADMIN], // CHỈ ADMIN MỚI THẤY
     },
     {
       label: "Validation Config",
       path: "/dashboard/validation",
       icon: <ShieldCheck size={20} />,
-      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
+      allowedRoles: [ROLES.ADMIN], // CHỈ ADMIN MỚI THẤY
     },
     {
       label: "Nhật ký hoạt động",

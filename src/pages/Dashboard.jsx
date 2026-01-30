@@ -9,8 +9,12 @@ import dashboardService from "../services/dashboardService";
 import DashboardChart from "../components/Dashboard/DashboardChart";
 import DashboardStats from "../components/Dashboard/DashboardStats";
 import RecentLogs from "../components/Dashboard/RecentLogs";
+import authService from "../services/authService";
 
 const Dashboard = () => {
+  const user = authService.getUserData();
+  const isStaff = user?.role === "Staff";
+  
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCompanies: 0,
@@ -46,7 +50,7 @@ const Dashboard = () => {
       <DashboardStats data={stats} loading={loading} />
       <DashboardChart loading={loading} />
 
-      <RecentLogs data={stats.recentLogs} loading={loading} />
+      {!isStaff && <RecentLogs data={stats.recentLogs} loading={loading} />}
     </div>
   );
 };
