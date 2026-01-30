@@ -4,6 +4,7 @@ import {
   DeleteOutlined,
   AuditOutlined,
   FileTextOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import reportService from "../services/reportService";
@@ -15,6 +16,7 @@ const DraftReport = () => {
   const [selectedReportId, setSelectedReportId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -26,20 +28,21 @@ const DraftReport = () => {
     if (!selectedReportId) {
       fetchDrafts();
     }
-  }, [pagination.current, selectedReportId]);
+  }, [selectedReportId]); // Bỏ pagination.current khỏi dependency vì sẽ pagination ở client-side
 
   const fetchDrafts = async () => {
     setLoading(true);
     try {
+      // Lấy TẤT CẢ draft và rejected (pageSize lớn để lấy hết)
       const [draftRes, rejectedRes] = await Promise.all([
         reportService.getReports({
-          pageNumber: pagination.current,
-          pageSize: pagination.pageSize,
+          pageNumber: 1,
+          pageSize: 1000, // Lấy hết tất cả
           status: "Draft",
         }),
         reportService.getReports({
-          pageNumber: pagination.current,
-          pageSize: pagination.pageSize,
+          pageNumber: 1,
+          pageSize: 1000, // Lấy hết tất cả
           status: "Rejected",
         }),
       ]);
@@ -55,10 +58,18 @@ const DraftReport = () => {
         new Map(combinedData.map((item) => [item.id, item])).values(),
       );
 
-      setData(uniqueData);
+      // Sắp xếp theo ngày tạo mới nhất đến cũ nhất
+      const sortedData = uniqueData.sort((a, b) => {
+        const dateA = new Date(a.uploadedAt);
+        const dateB = new Date(b.uploadedAt);
+        return dateB - dateA; // Giảm dần (mới nhất trước)
+      });
+
+      setData(sortedData);
+      // Set total đúng bằng số lượng data thực tế sau khi merge
       setPagination((prev) => ({
         ...prev,
-        total: (draftRes.totalCount || 0) + (rejectedRes.totalCount || 0),
+        total: sortedData.length,
       }));
     } catch (error) {
       console.error(error);
@@ -128,13 +139,12 @@ const DraftReport = () => {
           <Button
             type="primary"
             icon={<AuditOutlined />}
-            // Lưu ý: ID trong list là 'id', trong detail là 'reportId' (như hình JSON)
-            // Nhưng thường id của row chính là id cần tìm
             onClick={() => setSelectedReportId(record.id)}
             className="bg-blue-600 hover:bg-blue-500"
           >
             Đối chiếu
           </Button>
+          
           <Popconfirm
             title="Xóa?"
             onConfirm={() => handleDelete(record.id)}
@@ -142,6 +152,18 @@ const DraftReport = () => {
           >
             <Button danger icon={<DeleteOutlined />} />
           </Popconfirm>
+          
+          {/* Nút xem lý do từ chối - chỉ hiện khi status là Rejected */}
+          {record.status === "Rejected" && record.rejectionReason && (
+            <Button 
+              icon={<InfoCircleOutlined />} 
+              danger
+              onClick={() => {
+                const isExpanded = expandedRowKeys.includes(record.id);
+                setExpandedRowKeys(isExpanded ? [] : [record.id]);
+              }}
+            />
+          )}
         </Space>
       ),
     },
@@ -181,6 +203,21 @@ const DraftReport = () => {
         rowClassName={(record) =>
           record.status === "Rejected" ? "rejected-row" : ""
         }
+        expandable={{
+          expandedRowKeys: expandedRowKeys,
+          onExpand: (expanded, record) => {
+            setExpandedRowKeys(expanded ? [record.id] : []);
+          },
+          expandedRowRender: (record) => (
+            <div className="bg-red-50 p-4 border-l-4 border-red-500">
+              <p className="font-semibold text-red-800 mb-2">Lý do từ chối:</p>
+              <p className="text-gray-700">{record.rejectionReason}</p>
+            </div>
+          ),
+          rowExpandable: (record) => 
+            record.status === "Rejected" && !!record.rejectionReason,
+          expandIcon: () => null, // Ẩn icon expand mặc định
+        }}
       />
     </Card>
   );

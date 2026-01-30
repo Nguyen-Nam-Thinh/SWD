@@ -19,6 +19,7 @@ import {
   CloseCircleOutlined,
   ClockCircleOutlined,
   SyncOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -35,7 +36,7 @@ const ReportManager = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [currentTab, setCurrentTab] = useState("ALL");
-  
+
   // Pagination state
   const [pagination, setPagination] = useState({
     current: 1,
@@ -63,7 +64,7 @@ const ReportManager = () => {
 
       // API trả về object với items và pagination metadata
       const list = response.items || [];
-      
+
       // Cập nhật pagination từ API response
       setPagination({
         current: response.pageNumber || 1,
@@ -111,9 +112,16 @@ const ReportManager = () => {
     try {
       await reportService.approveReport(id);
       message.success("Đã duyệt báo cáo!");
-      fetchReports(); // Tải lại bảng
+      fetchReports(pagination.current, pagination.pageSize);
     } catch (e) {
-      message.error("Lỗi khi duyệt báo cáo");
+      console.error("Approve error:", e);
+      // Nếu là lỗi 400 nhưng có thể đã cập nhật DB, vẫn reload để kiểm tra
+      if (e.response?.status === 400) {
+        message.warning("Báo cáo có thể đã được duyệt, đang kiểm tra...");
+        fetchReports(pagination.current, pagination.pageSize);
+      } else {
+        message.error("Lỗi khi duyệt báo cáo");
+      }
     }
   };
 
@@ -127,11 +135,30 @@ const ReportManager = () => {
       await reportService.rejectReport(rejectItem.id, rejectReason);
       message.success("Đã từ chối báo cáo!");
       setRejectModalOpen(false);
-      fetchReports(); // Tải lại bảng
+      fetchReports(pagination.current, pagination.pageSize);
     } catch (e) {
-      message.error("Lỗi khi từ chối");
+      console.error("Reject error:", e);
+      // Nếu là lỗi 400 nhưng có thể đã cập nhật DB, vẫn reload và đóng modal
+      if (e.response?.status === 400) {
+        message.warning("Báo cáo có thể đã bị từ chối, đang kiểm tra...");
+        setRejectModalOpen(false);
+        fetchReports(pagination.current, pagination.pageSize);
+      } else {
+        message.error("Lỗi khi từ chối báo cáo");
+      }
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleDelete = async (id, companyName) => {
+    try {
+      await reportService.deleteReport(id);
+      message.success(`Đã xóa báo cáo ${companyName}`);
+      fetchReports(pagination.current, pagination.pageSize); // Giữ nguyên trang hiện tại
+    } catch (e) {
+      message.error("Lỗi khi xóa báo cáo");
+      console.error("Delete error:", e);
     }
   };
 
@@ -185,7 +212,7 @@ const ReportManager = () => {
     {
       title: "Hành động",
       key: "action",
-      width: 150,
+      width: 200,
       render: (_, r) => (
         <Space>
           <Tooltip title="Xem chi tiết">
@@ -226,6 +253,20 @@ const ReportManager = () => {
               </Tooltip>
             </>
           )}
+
+          {/* Nút xóa - Hiện với tất cả trạng thái */}
+          <Tooltip title="Xóa báo cáo">
+            <Popconfirm
+              title="Xác nhận xóa báo cáo"
+              description={`Bạn có chắc chắn muốn xóa báo cáo của ${r.companyName}?`}
+              onConfirm={() => handleDelete(r.id, r.companyName)}
+              okText="Đồng ý"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
