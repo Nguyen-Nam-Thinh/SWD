@@ -14,11 +14,10 @@ export default async function handler(req, res) {
     return;
   }
   
-  // Extract path from query string (from vercel rewrite)
-  // vercel.json rewrites /api/Auth/login -> /api/proxy?path=Auth/login
-  const pathParam = req.query.path || '';
-  const pathArray = Array.isArray(pathParam) ? pathParam : [pathParam];
-  const path = '/' + pathArray.join('/');
+  // Extract path from query params (Vercel catch-all route)
+  // req.query.proxy will be an array like ['Auth', 'login']
+  const pathSegments = req.query.proxy || [];
+  const path = '/' + pathSegments.join('/');
   const targetUrl = `${BACKEND_URL}${path}`;
   
   console.log(`[Proxy] ${req.method} ${targetUrl}`);
