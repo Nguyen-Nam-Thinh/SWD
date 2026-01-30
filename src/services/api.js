@@ -1,4 +1,9 @@
 import axios from "axios";
+import loggingMiddleware from "../middleware/loggingMiddleware";
+import errorHandlerMiddleware from "../middleware/errorHandlerMiddleware";
+import authMiddleware from "../middleware/authMiddleware";
+import rateLimitMiddleware from "../middleware/rateLimitMiddleware";
+import auditMiddleware from "../middleware/auditMiddleware";
 
 // Tạo axios instance với base URL từ env
 const api = axios.create({
@@ -6,6 +11,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 30000, // 30 seconds timeout
 });
 
 // Biến để track việc refresh token đang diễn ra
@@ -23,21 +29,71 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - tự động thêm token vào header
+// ============= REQUEST INTERCEPTORS =============
+
+// 1. Timing interceptor (đo thời gian request)
+api.interceptors.request.use(
+  (config) => {
+    config.metadata = { startTime: Date.now() };
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// 2. Rate limiting interceptor
+api.interceptors.request.use(
+  (config) => {
+    try {
+      return rateLimitMiddleware.checkRateLimit(config);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+  (error) => Promise.reject(error),
+);
+
+// 3. Auth interceptor - thêm token và user info
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+
+    // Attach user info vào metadata
+    return authMiddleware.attachUserInfo(config);
+  },
+  (error) => Promise.reject(error),
+);
+
+// 4. Logging interceptor - log requests
+api.interceptors.request.use(
+  (config) => loggingMiddleware.logRequest(config),
+  (error) => Promise.reject(error),
+);
+
+// ============= RESPONSE INTERCEPTORS =============
+
+// 1. Logging interceptor - log responses
+api.interceptors.response.use(
+  (response) => {
+    // Log audit trail
+    auditMiddleware.logAudit(response.config, response);
+
+    // Log response
+    return loggingMiddleware.logResponse(response);
   },
   (error) => {
+    // Log audit trail for errors
+    auditMiddleware.logAudit(error.config, null, error);
+
+    // Log error
+    loggingMiddleware.logError(error);
     return Promise.reject(error);
   },
 );
 
-// Response interceptor - xử lý lỗi và auto refresh token
+// 2. Token refresh interceptor - xử lý 401 và auto refresh token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -111,6 +167,20 @@ api.interceptors.response.use(
 
     return Promise.reject(error);
   },
+);
+
+// 3. Error handler interceptor - xử lý và hiển thị lỗi
+api.interceptors.response.use(
+  (response) => response,
+  (error) => errorHandlerMiddleware.handleError(error),
+);
+
+// Cleanup rate limit records định kỳ (mỗi 5 phút)
+setInterval(
+  () => {
+    rateLimitMiddleware.cleanup();
+  },
+  5 * 60 * 1000,
 );
 
 export default api;

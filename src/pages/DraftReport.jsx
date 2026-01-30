@@ -31,19 +31,38 @@ const DraftReport = () => {
   const fetchDrafts = async () => {
     setLoading(true);
     try {
-      // --- ĐÚNG YÊU CẦU: Gọi getReports với Status = 'Draft' ---
-      const res = await reportService.getReports({
-        pageNumber: pagination.current,
-        pageSize: pagination.pageSize,
-        status: "Draft", // Lọc chỉ lấy bản nháp
-      });
+      const [draftRes, rejectedRes] = await Promise.all([
+        reportService.getReports({
+          pageNumber: pagination.current,
+          pageSize: pagination.pageSize,
+          status: "Draft",
+        }),
+        reportService.getReports({
+          pageNumber: pagination.current,
+          pageSize: pagination.pageSize,
+          status: "Rejected",
+        }),
+      ]);
 
-      // Xử lý dữ liệu trả về (tùy format API của bạn là {items:[]} hay [])
-      setData(res.items || []);
-      setPagination((prev) => ({ ...prev, total: res.totalCount || 0 }));
+      // Merge 2 kết quả
+      const combinedData = [
+        ...(draftRes.items || []),
+        ...(rejectedRes.items || []),
+      ];
+
+      // Loại bỏ duplicate (nếu có)
+      const uniqueData = Array.from(
+        new Map(combinedData.map((item) => [item.id, item])).values(),
+      );
+
+      setData(uniqueData);
+      setPagination((prev) => ({
+        ...prev,
+        total: (draftRes.totalCount || 0) + (rejectedRes.totalCount || 0),
+      }));
     } catch (error) {
       console.error(error);
-      // message.error("Lỗi tải danh sách");
+      message.error("Lỗi tải danh sách");
     } finally {
       setLoading(false);
     }
@@ -139,6 +158,16 @@ const DraftReport = () => {
         </Button>
       }
     >
+      <style>
+        {`
+          .rejected-row {
+            background-color: #fef2f2 !important;
+          }
+          .rejected-row:hover > td {
+            background-color: #fee2e2 !important;
+          }
+        `}
+      </style>
       <Table
         rowKey="id"
         columns={columns}
@@ -149,6 +178,9 @@ const DraftReport = () => {
           onChange: (page) =>
             setPagination((prev) => ({ ...prev, current: page })),
         }}
+        rowClassName={(record) =>
+          record.status === "Rejected" ? "rejected-row" : ""
+        }
       />
     </Card>
   );

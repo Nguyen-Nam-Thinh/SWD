@@ -74,7 +74,7 @@ const FinancialReportUpload = () => {
 
       await reportService.uploadReport(formData);
       message.success("Tải lên báo cáo thành công!");
-      // navigate("/dashboard/draft-reports");
+      navigate("/dashboard/draft-report");
     } catch (error) {
       console.error(error);
       message.error(error.response?.data?.message || "Lỗi khi tải lên báo cáo");
@@ -149,7 +149,7 @@ const FinancialReportUpload = () => {
                   showSearch
                   optionFilterProp="children"
                   // --- KEY POINT: Custom Dropdown ---
-                  dropdownRender={(menu) => (
+                  popupRender={(menu) => (
                     <>
                       {menu}
                       <Divider style={{ margin: "8px 0" }} />
