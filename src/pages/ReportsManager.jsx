@@ -35,6 +35,13 @@ const ReportManager = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [currentTab, setCurrentTab] = useState("ALL");
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   // State xem chi tiết
   const [selectedReportId, setSelectedReportId] = useState(null);
@@ -46,25 +53,27 @@ const ReportManager = () => {
   const [processing, setProcessing] = useState(false);
 
   // --- LOGIC TẢI DỮ LIỆU ---
-  const fetchReports = async () => {
+  const fetchReports = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
-      const response = await reportService.getReports();
-
-      // Xử lý dữ liệu: API trả về object { items: [...] } nên cần lấy .items
-      // Nếu API thay đổi trả về mảng thì code này vẫn chạy tốt
-      const list = Array.isArray(response) ? response : response.items || [];
-
-      // Sắp xếp: Mới nhất lên đầu
-      const sorted = list.sort((a, b) => {
-        const dateA = a.uploadedAt ? new Date(a.uploadedAt) : new Date(0);
-        const dateB = b.uploadedAt ? new Date(b.uploadedAt) : new Date(0);
-        return dateB - dateA;
+      const response = await reportService.getReports({
+        PageNumber: page,
+        PageSize: pageSize,
       });
 
-      setReports(sorted);
+      // API trả về object với items và pagination metadata
+      const list = response.items || [];
+      
+      // Cập nhật pagination từ API response
+      setPagination({
+        current: response.pageNumber || 1,
+        pageSize: response.pageSize || 10,
+        total: response.totalCount || 0,
+      });
+
+      setReports(list);
       // Gọi lại filter để áp dụng cho dữ liệu mới tải
-      filterData(sorted, currentTab);
+      filterData(list, currentTab);
     } catch (error) {
       console.error("Lỗi fetch:", error);
       message.error("Lỗi tải danh sách báo cáo");
@@ -90,6 +99,11 @@ const ReportManager = () => {
   const onTabChange = (key) => {
     setCurrentTab(key);
     filterData(reports, key);
+  };
+
+  // Handle pagination change
+  const handleTableChange = (newPagination) => {
+    fetchReports(newPagination.current, newPagination.pageSize);
   };
 
   // --- CÁC HÀM HÀNH ĐỘNG ---
@@ -274,7 +288,13 @@ const ReportManager = () => {
           dataSource={filteredReports}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showTotal: (total) => `Tổng ${total} báo cáo`,
+          }}
+          onChange={handleTableChange}
           className="mt-4"
         />
       </Card>

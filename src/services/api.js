@@ -119,6 +119,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem("refreshToken");
+      const oldToken = localStorage.getItem("token"); // Lấy token cũ
 
       if (!refreshToken) {
         // Không có refresh token, redirect về login
@@ -129,20 +130,34 @@ api.interceptors.response.use(
       }
 
       try {
-        // Gọi API refresh token
+        // Gọi API refresh token - GỬI KÈM TOKEN CŨ TRONG HEADER
+        console.log("🔄 Attempting to refresh token...");
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/Auth/refresh-token`,
           { refreshToken },
+          {
+            headers: {
+              Authorization: `Bearer ${oldToken}`, // API yêu cầu token cũ trong header
+            },
+          },
         );
+
+        console.log("✅ Refresh token response:", response.data);
 
         const { token: newToken, refreshToken: newRefreshToken } =
           response.data;
+
+        if (!newToken) {
+          throw new Error("No token in refresh response");
+        }
 
         // Lưu token mới
         localStorage.setItem("token", newToken);
         if (newRefreshToken) {
           localStorage.setItem("refreshToken", newRefreshToken);
         }
+
+        console.log("💾 New token saved to localStorage");
 
         // Update header cho request ban đầu
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -154,6 +169,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh token thất bại, logout
+        console.error("❌ Refresh token failed:", refreshError);
+        console.error("Error response:", refreshError.response?.data);
+        
         processQueue(refreshError, null);
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");

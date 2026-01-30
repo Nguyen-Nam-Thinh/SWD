@@ -20,6 +20,11 @@ class AuditMiddleware {
 
   // Kiểm tra xem có cần audit action này không
   shouldAudit(config) {
+    // Kiểm tra config tồn tại
+    if (!config) {
+      return false;
+    }
+    
     const url = config.url || "";
     return this.auditableActions.some((pattern) => {
       const regex = new RegExp(pattern);
@@ -29,7 +34,8 @@ class AuditMiddleware {
 
   // Log audit trail
   logAudit(config, response = null, error = null) {
-    if (!this.shouldAudit(config)) {
+    // Kiểm tra config tồn tại trước khi audit
+    if (!config || !this.shouldAudit(config)) {
       return;
     }
 
