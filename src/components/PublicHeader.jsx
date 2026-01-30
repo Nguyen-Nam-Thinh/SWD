@@ -24,10 +24,7 @@ const PublicHeader = () => {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-          <a
-            href="/#features"
-            className="hover:text-blue-600 transition-colors"
-          >
+          <a href="/#features" className="hover:text-blue-600 transition-colors">
             Tính năng
           </a>
           <a
@@ -62,9 +59,7 @@ const PublicHeader = () => {
                 className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-blue-300 shadow-md hover:scale-110 transition-transform"
                 title={user.fullName || user.username}
               >
-                {(user.fullName || user.username || "U")
-                  .charAt(0)
-                  .toUpperCase()}
+                {(user.fullName || user.username || "U").charAt(0).toUpperCase()}
               </Link>
             </>
           ) : (
