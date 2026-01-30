@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -90,11 +90,11 @@ const Sidebar = () => {
   return (
     <aside className="w-64 bg-[#001529] text-white min-h-screen flex flex-col fixed left-0 top-0 bottom-0 z-50">
       {/* --- LOGO --- */}
-      <div className="h-16 flex items-center justify-center border-b border-gray-700">
+      <Link to="/" className="h-16 flex items-center justify-center border-b border-gray-700 hover:bg-[#1890ff]/10 transition-colors cursor-pointer">
         <span className="text-xl font-bold tracking-wider text-white">
           UNICA FINANCE
         </span>
-      </div>
+      </Link>
 
       {/* --- MENU LIST --- */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">

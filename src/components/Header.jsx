@@ -38,8 +38,8 @@ const Header = () => {
             <div className="text-sm font-bold text-slate-800">{user?.fullName || "User"}</div>
             <div className="text-xs text-slate-500 capitalize">{user?.role || "Member"}</div>
           </div>
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 border border-blue-200">
-            <User size={20} />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-blue-300 shadow-md">
+            {(user?.fullName || user?.username || "U").charAt(0).toUpperCase()}
           </div>
           
           <button 
