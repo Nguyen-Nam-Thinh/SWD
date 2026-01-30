@@ -20,6 +20,8 @@ import {
 import DocumentViewer from "../DraftReport/DocumentViewer";
 import MetricTable from "../DraftReport/MetricTable";
 import reportService from "../../services/reportService";
+import { usePermission, useCurrentUser } from "../../hooks/useAuth";
+import { authMiddleware } from "../../middleware";
 
 const ReportApprovalView = ({ reportId, onBack }) => {
   const [loading, setLoading] = useState(false);
@@ -30,6 +32,11 @@ const ReportApprovalView = ({ reportId, onBack }) => {
   // State Modal Từ chối
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+
+  // Check permissions - chỉ Manager và Admin có quyền approve/reject
+  const canApprove = usePermission("approve_report", false);
+  const canReject = usePermission("reject_report", false);
+  const currentUser = useCurrentUser();
 
   // Load dữ liệu
   useEffect(() => {
@@ -48,18 +55,26 @@ const ReportApprovalView = ({ reportId, onBack }) => {
         setLoading(false);
       }
     };
+
     fetchDetail();
   }, [reportId]);
 
   // Xử lý Duyệt
   const handleApprove = async () => {
+    // Double check permission
+    if (!canApprove) {
+      message.error("Bạn không có quyền duyệt báo cáo");
+      return;
+    }
+
     setProcessing(true);
     try {
       await reportService.approveReport(reportId);
       message.success("Đã duyệt báo cáo thành công!");
       onBack(); // Quay lại danh sách
     } catch (error) {
-      message.error("Lỗi khi duyệt báo cáo");
+      // Error đã được xử lý bởi errorHandlerMiddleware
+      console.error("Approve error:", error);
     } finally {
       setProcessing(false);
     }
@@ -67,10 +82,17 @@ const ReportApprovalView = ({ reportId, onBack }) => {
 
   // Xử lý Từ chối
   const handleRejectSubmit = async () => {
+    // Double check permission
+    if (!canReject) {
+      message.error("Bạn không có quyền từ chối báo cáo");
+      return;
+    }
+
     if (!rejectReason.trim()) {
       message.warning("Vui lòng nhập lý do từ chối");
       return;
     }
+
     setProcessing(true);
     try {
       await reportService.rejectReport(reportId, rejectReason);
@@ -78,7 +100,8 @@ const ReportApprovalView = ({ reportId, onBack }) => {
       setIsRejectModalOpen(false);
       onBack();
     } catch (error) {
-      message.error("Lỗi khi từ chối báo cáo");
+      // Error đã được xử lý bởi errorHandlerMiddleware
+      console.error("Reject error:", error);
     } finally {
       setProcessing(false);
     }
@@ -96,45 +119,61 @@ const ReportApprovalView = ({ reportId, onBack }) => {
       {/* HEADER */}
       <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shadow-sm z-20">
         <div className="flex items-center gap-4">
-          <Button icon={<ArrowLeftOutlined />} onClick={onBack}>
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={onBack}
+            className="hover:bg-gray-100"
+          >
             Quay lại
           </Button>
-          <div className="h-8 w-px bg-gray-200 mx-2"></div>
-          <div>
-            <div className="font-bold text-lg text-gray-800">
-              {reportInfo?.companyName}
-            </div>
-            <div className="text-xs text-gray-500">
-              Năm {reportInfo?.year} • Quý {reportInfo?.period}
-            </div>
-          </div>
+          <div className="h-8 w-px bg-gray-300"></div>
+          <h2 className="text-lg font-semibold">Duyệt báo cáo #{reportId}</h2>
+          {reportInfo?.status && (
+            <Tag
+              color={
+                reportInfo.status === "Approved"
+                  ? "green"
+                  : reportInfo.status === "Rejected"
+                    ? "red"
+                    : "orange"
+              }
+            >
+              {reportInfo.status}
+            </Tag>
+          )}
         </div>
 
-        {/* Nút thao tác (Chỉ hiện nếu status là Pending) */}
-        {reportInfo?.status === "Pending" && (
+        {/* Nút thao tác (Chỉ hiện nếu status là Pending và có quyền) */}
+        {reportInfo?.status === "Pending" && (canApprove || canReject) && (
           <Space>
-            <Button
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => setIsRejectModalOpen(true)}
-            >
-              Từ chối
-            </Button>
-            <Popconfirm
-              title="Duyệt báo cáo này?"
-              onConfirm={handleApprove}
-              okText="Đồng ý"
-              cancelText="Hủy"
-            >
+            {canReject && (
               <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                loading={processing}
-                className="bg-green-600"
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => setIsRejectModalOpen(true)}
               >
-                Phê duyệt
+                Từ chối
               </Button>
-            </Popconfirm>
+            )}
+            {canApprove && (
+              <Popconfirm
+                title="Duyệt báo cáo này?"
+                description={`Bạn (${currentUser?.fullName}) sẽ phê duyệt báo cáo này.`}
+                onConfirm={handleApprove}
+                okText="Đồng ý"
+                cancelText="Hủy"
+              >
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  loading={processing}
+                  className="bg-green-600"
+                >
+                  Phê duyệt
+                </Button>
+              </Popconfirm>
+            )}
           </Space>
         )}
       </div>

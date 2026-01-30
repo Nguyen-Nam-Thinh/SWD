@@ -80,12 +80,6 @@ const Sidebar = () => {
       icon: <FileText size={20} />,
       allowedRoles: [ROLES.ADMIN], // CHỈ ADMIN MỚI THẤY
     },
-    {
-      label: "Cài đặt",
-      path: "/dashboard/settings",
-      icon: <Settings size={20} />,
-      allowedRoles: [ROLES.ADMIN], // Giả sử chỉ Admin mới được chỉnh cài đặt
-    },
   ];
 
   // 3. Lọc menu: Chỉ giữ lại các item mà Role hiện tại có trong danh sách cho phép

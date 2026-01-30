@@ -50,7 +50,7 @@ const MetricTable = ({ data, loading, onValueChange, readOnly = false }) => {
                     {item.metricCode}
                   </span>
                 </div>
-                <div className="flex flex-col items-end w-[140px] flex-shrink-0">
+                <div className="flex flex-col items-end w-35 shrink-0">
                   <div className="flex items-center gap-1 mb-1 text-xs text-gray-500">
                     <span>Độ tin cậy:</span>
                     <span style={{ color: progressColor, fontWeight: "bold" }}>
@@ -79,7 +79,7 @@ const MetricTable = ({ data, loading, onValueChange, readOnly = false }) => {
                   }`}
               >
                 {/* AI Value */}
-                <div className="flex flex-col w-[110px] flex-shrink-0 border-r border-gray-200 pr-2">
+                <div className="flex flex-col w-35 shrink-0 border-r border-gray-200 pr-2">
                   <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">
                     <RobotOutlined /> AI Gợi ý
                   </div>
@@ -93,7 +93,7 @@ const MetricTable = ({ data, loading, onValueChange, readOnly = false }) => {
                   </Tooltip>
                 </div>
 
-                <div className="text-gray-300 flex-shrink-0 text-xs">
+                <div className="text-gray-300 shrink-0 text-xs">
                   <ArrowRightOutlined />
                 </div>
 
