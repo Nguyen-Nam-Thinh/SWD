@@ -35,7 +35,7 @@ const ReportManager = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [currentTab, setCurrentTab] = useState("ALL");
-  
+
   // Pagination state
   const [pagination, setPagination] = useState({
     current: 1,
@@ -63,7 +63,7 @@ const ReportManager = () => {
 
       // API trả về object với items và pagination metadata
       const list = response.items || [];
-      
+
       // Cập nhật pagination từ API response
       setPagination({
         current: response.pageNumber || 1,

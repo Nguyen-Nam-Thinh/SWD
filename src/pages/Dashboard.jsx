@@ -14,7 +14,7 @@ import authService from "../services/authService";
 const Dashboard = () => {
   const user = authService.getUserData();
   const isStaff = user?.role === "Staff";
-  
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCompanies: 0,

@@ -24,7 +24,7 @@ class AuditMiddleware {
     if (!config) {
       return false;
     }
-    
+
     const url = config.url || "";
     return this.auditableActions.some((pattern) => {
       const regex = new RegExp(pattern);
