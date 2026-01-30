@@ -4,8 +4,11 @@ import {
   BankOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
+import authService from "../../services/authService";
 
 const DashboardStats = ({ data }) => {
+  const user = authService.getUserData();
+  const isStaff = user?.role === "Staff";
   // Cấu hình cho 3 thẻ thống kê
   const statItems = [
     {
@@ -27,6 +30,11 @@ const DashboardStats = ({ data }) => {
       color: "#cf1322", // Đỏ
     },
   ];
+
+  // Nếu là Staff thì không hiển thị stats
+  if (isStaff) {
+    return null;
+  }
 
   return (
     <Row gutter={16}>
