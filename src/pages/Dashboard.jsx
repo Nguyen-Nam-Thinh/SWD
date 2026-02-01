@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, Col, Row, Statistic, Spin, message } from "antd";
-import {
-  UserOutlined,
-  BankOutlined,
-  FileTextOutlined,
-} from "@ant-design/icons";
+import { Spin, message } from "antd";
 import dashboardService from "../services/dashboardService";
 import DashboardChart from "../components/Dashboard/DashboardChart";
 import DashboardStats from "../components/Dashboard/DashboardStats";
@@ -15,29 +10,50 @@ const Dashboard = () => {
   const user = authService.getUserData();
   const isStaff = user?.role === "Staff";
 
+  // State 1: Dữ liệu Tổng quan
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCompanies: 0,
     totalReports: 0,
     recentLogs: [],
   });
-  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
 
+  // State 2: Dữ liệu Biểu đồ
+  const [chartData, setChartData] = useState({ week: [], month: [], year: [] });
+  const [chartLoading, setChartLoading] = useState(true);
+
+  // EFFECT 1: Tải số liệu tổng quan (Chạy nhanh)
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStats = async () => {
       try {
         const data = await dashboardService.getDashboardStats();
         setStats(data);
       } catch (error) {
-        message.error("Lỗi tải dữ liệu Dashboard");
+        message.error("Lỗi tải số liệu tổng quan");
       } finally {
-        setLoading(false);
+        setStatsLoading(false);
       }
     };
-    fetchData();
+    fetchStats();
   }, []);
 
-  if (loading) {
+  // EFFECT 2: Tải dữ liệu biểu đồ (Chạy chậm hơn chút cũng không sao)
+  useEffect(() => {
+    const fetchChart = async () => {
+      try {
+        const data = await dashboardService.getChartStats();
+        setChartData(data);
+      } catch (error) {
+        console.error("Lỗi tải biểu đồ");
+      } finally {
+        setChartLoading(false);
+      }
+    };
+    fetchChart();
+  }, []);
+
+  if (statsLoading) {
     return (
       <div className="flex h-64 justify-center items-center">
         <Spin size="large" />
@@ -47,10 +63,15 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <DashboardStats data={stats} loading={loading} />
-      <DashboardChart loading={loading} />
+      {/* Các thẻ Card dùng state stats và loading riêng */}
+      <DashboardStats data={stats} loading={statsLoading} />
 
-      {!isStaff && <RecentLogs data={stats.recentLogs} loading={loading} />}
+      {/* Biểu đồ dùng state chartData và loading riêng */}
+      <DashboardChart chartData={chartData} loading={chartLoading} />
+
+      {!isStaff && (
+        <RecentLogs data={stats.recentLogs} loading={statsLoading} />
+      )}
     </div>
   );
 };

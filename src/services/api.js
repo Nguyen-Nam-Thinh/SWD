@@ -122,10 +122,16 @@ api.interceptors.response.use(
       const oldToken = localStorage.getItem("token"); // Lấy token cũ
 
       if (!refreshToken) {
-        // Không có refresh token, redirect về login
+        // Không có refresh token
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+
+        // Chỉ redirect về login nếu đang ở trang protected (dashboard)
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith("/dashboard")) {
+          window.location.href = "/login";
+        }
+
         return Promise.reject(error);
       }
 
@@ -168,7 +174,7 @@ api.interceptors.response.use(
         // Retry request ban đầu
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh token thất bại, logout
+        // Refresh token thất bại
         console.error("❌ Refresh token failed:", refreshError);
         console.error("Error response:", refreshError.response?.data);
 
@@ -176,7 +182,13 @@ api.interceptors.response.use(
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+
+        // Chỉ redirect về login nếu đang ở trang protected (dashboard)
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith("/dashboard")) {
+          window.location.href = "/login";
+        }
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

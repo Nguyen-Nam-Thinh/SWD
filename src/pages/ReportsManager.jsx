@@ -54,13 +54,20 @@ const ReportManager = () => {
   const [processing, setProcessing] = useState(false);
 
   // --- LOGIC TẢI DỮ LIỆU ---
-  const fetchReports = async (page = 1, pageSize = 10) => {
+  const fetchReports = async (page = 1, pageSize = 10, status = null) => {
     setLoading(true);
     try {
-      const response = await reportService.getReports({
+      const params = {
         PageNumber: page,
         PageSize: pageSize,
-      });
+      };
+
+      // Thêm filter status nếu không phải "ALL"
+      if (status && status !== "ALL") {
+        params.Status = status;
+      }
+
+      const response = await reportService.getReports(params);
 
       // API trả về object với items và pagination metadata
       const list = response.items || [];
@@ -73,8 +80,8 @@ const ReportManager = () => {
       });
 
       setReports(list);
-      // Gọi lại filter để áp dụng cho dữ liệu mới tải
-      filterData(list, currentTab);
+      // Không cần filter ở client nữa vì API đã filter rồi
+      setFilteredReports(list);
     } catch (error) {
       console.error("Lỗi fetch:", error);
       message.error("Lỗi tải danh sách báo cáo");
@@ -84,27 +91,19 @@ const ReportManager = () => {
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchReports(1, 10, currentTab);
   }, []); // Chạy 1 lần khi mount
 
-  // --- LOGIC LỌC (FILTER) ---
-  const filterData = (dataSource, tabKey) => {
-    if (tabKey === "ALL") {
-      setFilteredReports(dataSource);
-    } else {
-      // So sánh chính xác với status của API
-      setFilteredReports(dataSource.filter((r) => r.status === tabKey));
-    }
-  };
-
+  // --- LOGIC CHUYỂN TAB ---
   const onTabChange = (key) => {
     setCurrentTab(key);
-    filterData(reports, key);
+    // Reset về trang 1 và fetch lại dữ liệu với status mới
+    fetchReports(1, pagination.pageSize, key);
   };
 
   // Handle pagination change
   const handleTableChange = (newPagination) => {
-    fetchReports(newPagination.current, newPagination.pageSize);
+    fetchReports(newPagination.current, newPagination.pageSize, currentTab);
   };
 
   // --- CÁC HÀM HÀNH ĐỘNG ---
@@ -112,13 +111,13 @@ const ReportManager = () => {
     try {
       await reportService.approveReport(id);
       message.success("Đã duyệt báo cáo!");
-      fetchReports(pagination.current, pagination.pageSize);
+      fetchReports(pagination.current, pagination.pageSize, currentTab);
     } catch (e) {
       console.error("Approve error:", e);
       // Nếu là lỗi 400 nhưng có thể đã cập nhật DB, vẫn reload để kiểm tra
       if (e.response?.status === 400) {
         message.warning("Báo cáo có thể đã được duyệt, đang kiểm tra...");
-        fetchReports(pagination.current, pagination.pageSize);
+        fetchReports(pagination.current, pagination.pageSize, currentTab);
       } else {
         message.error("Lỗi khi duyệt báo cáo");
       }
@@ -135,14 +134,14 @@ const ReportManager = () => {
       await reportService.rejectReport(rejectItem.id, rejectReason);
       message.success("Đã từ chối báo cáo!");
       setRejectModalOpen(false);
-      fetchReports(pagination.current, pagination.pageSize);
+      fetchReports(pagination.current, pagination.pageSize, currentTab);
     } catch (e) {
       console.error("Reject error:", e);
       // Nếu là lỗi 400 nhưng có thể đã cập nhật DB, vẫn reload và đóng modal
       if (e.response?.status === 400) {
         message.warning("Báo cáo có thể đã bị từ chối, đang kiểm tra...");
         setRejectModalOpen(false);
-        fetchReports(pagination.current, pagination.pageSize);
+        fetchReports(pagination.current, pagination.pageSize, currentTab);
       } else {
         message.error("Lỗi khi từ chối báo cáo");
       }
@@ -155,7 +154,7 @@ const ReportManager = () => {
     try {
       await reportService.deleteReport(id);
       message.success(`Đã xóa báo cáo ${companyName}`);
-      fetchReports(pagination.current, pagination.pageSize); // Giữ nguyên trang hiện tại
+      fetchReports(pagination.current, pagination.pageSize, currentTab); // Giữ nguyên trang hiện tại
     } catch (e) {
       message.error("Lỗi khi xóa báo cáo");
       console.error("Delete error:", e);
@@ -281,7 +280,7 @@ const ReportManager = () => {
         reportId={selectedReportId}
         onBack={() => {
           setSelectedReportId(null);
-          fetchReports(); // Refresh lại dữ liệu khi quay về
+          fetchReports(pagination.current, pagination.pageSize, currentTab); // Refresh lại dữ liệu khi quay về
         }}
       />
     );
@@ -295,7 +294,12 @@ const ReportManager = () => {
           <Title level={3} style={{ margin: 0 }}>
             Quản lý Phê duyệt
           </Title>
-          <Button icon={<SyncOutlined />} onClick={fetchReports}>
+          <Button
+            icon={<SyncOutlined />}
+            onClick={() =>
+              fetchReports(pagination.current, pagination.pageSize, currentTab)
+            }
+          >
             Làm mới
           </Button>
         </div>
