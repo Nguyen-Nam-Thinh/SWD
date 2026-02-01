@@ -9,12 +9,12 @@ const DashboardLayout = () => {
       <Sidebar />
 
       {/* 2. Phần nội dung chính (bên phải Sidebar) */}
-      <div className="ml-64">
+      <div className="md:ml-64 ml-0">
         {/* Header cố định bên trên */}
         <Header />
 
         {/* Nội dung thay đổi (Main Content) */}
-        <main className="mt-16 p-8">
+        <main className="mt-16 p-4 md:p-8">
           {/* Outlet là nơi các trang con (Overview, Settings,...) sẽ hiển thị */}
           <Outlet />
         </main>

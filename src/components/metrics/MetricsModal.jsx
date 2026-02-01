@@ -1,15 +1,32 @@
 import { Modal, Form, Input } from "antd";
+import { useEffect } from "react";
 
 const { TextArea } = Input;
 
 const MetricsModal = ({
   open,
   editingMetric,
-  form,
+  formRef,
   loading,
   onSubmit,
   onCancel,
 }) => {
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (formRef) {
+      formRef.current = form;
+    }
+  }, [form, formRef]);
+
+  useEffect(() => {
+    if (open && editingMetric) {
+      form.setFieldsValue(editingMetric);
+    } else if (!open) {
+      form.resetFields();
+    }
+  }, [open, editingMetric, form]);
+
   return (
     <Modal
       title={editingMetric ? "Chỉnh Sửa Metric" : "Thêm Metric Mới"}

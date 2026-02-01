@@ -21,10 +21,12 @@ import {
   SyncOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import { Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
 
 // Import service và component con
 import reportService from "../services/reportService";
+import ResponsiveTable from "../components/ResponsiveTable";
 // Đảm bảo đường dẫn import component con đúng với cấu trúc thư mục của bạn
 import ReportApprovalView from "../components/Approval/ReportApprovalView";
 
@@ -161,10 +163,85 @@ const ReportManager = () => {
     }
   };
 
+  // Render mobile actions
+  const renderMobileActions = (record) => (
+    <div className="flex gap-2 flex-wrap">
+      <Button
+        size="small"
+        icon={<Eye size={14} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedReportId(record.id);
+        }}
+        className="flex items-center gap-1"
+      >
+        Xem
+      </Button>
+
+      {record.status === "PendingApproval" && (
+        <>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Popconfirm
+              title="Duyệt báo cáo này?"
+              onConfirm={() => handleQuickApprove(record.id)}
+              okText="Duyệt"
+              cancelText="Hủy"
+            >
+              <Button
+                size="small"
+                type="primary"
+                ghost
+                icon={<CheckCircle size={14} />}
+                className="flex items-center gap-1 text-green-600 border-green-600"
+              >
+                Duyệt
+              </Button>
+            </Popconfirm>
+          </div>
+          <Button
+            size="small"
+            danger
+            icon={<XCircle size={14} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              setRejectItem(record);
+              setRejectReason("");
+              setRejectModalOpen(true);
+            }}
+            className="flex items-center gap-1"
+          >
+            Từ chối
+          </Button>
+        </>
+      )}
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <Popconfirm
+          title="Xác nhận xóa báo cáo"
+          description={`Bạn có chắc chắn muốn xóa báo cáo của ${record.companyName}?`}
+          onConfirm={() => handleDelete(record.id, record.companyName)}
+          okText="Đồng ý"
+          cancelText="Hủy"
+          okButtonProps={{ danger: true }}
+        >
+          <Button
+            size="small"
+            danger
+            icon={<Trash2 size={14} />}
+            className="flex items-center gap-1"
+          >
+            Xóa
+          </Button>
+        </Popconfirm>
+      </div>
+    </div>
+  );
+
   // --- CẤU HÌNH CỘT BẢNG ---
   const columns = [
     {
       title: "Công ty",
+      label: "Công ty",
       dataIndex: "companyName",
       key: "companyName",
       render: (t, r) => (
@@ -178,12 +255,14 @@ const ReportManager = () => {
     },
     {
       title: "Ngày tạo",
-      dataIndex: "uploadedAt", // Đã sửa thành uploadedAt
+      label: "Ngày tạo",
+      dataIndex: "uploadedAt",
       key: "uploadedAt",
       render: (d) => (d ? dayjs(d).format("DD/MM/YYYY HH:mm") : "-"),
     },
     {
       title: "Trạng thái",
+      label: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => {
@@ -210,6 +289,7 @@ const ReportManager = () => {
     },
     {
       title: "Hành động",
+      label: "Hành động",
       key: "action",
       width: 200,
       render: (_, r) => (
@@ -288,10 +368,14 @@ const ReportManager = () => {
 
   // 2. Mặc định -> Hiển thị Bảng quản lý
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-3 md:p-6 bg-gray-50 min-h-screen">
       <Card bordered={false} className="shadow-sm rounded-lg">
-        <div className="flex justify-between items-center mb-6">
-          <Title level={3} style={{ margin: 0 }}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
+          <Title
+            level={3}
+            className="!text-lg md:!text-2xl"
+            style={{ margin: 0 }}
+          >
             Quản lý Phê duyệt
           </Title>
           <Button
@@ -299,8 +383,10 @@ const ReportManager = () => {
             onClick={() =>
               fetchReports(pagination.current, pagination.pageSize, currentTab)
             }
+            size="small"
+            className="md:!h-8"
           >
-            Làm mới
+            <span className="hidden sm:inline">Làm mới</span>
           </Button>
         </div>
 
@@ -308,40 +394,68 @@ const ReportManager = () => {
           activeKey={currentTab}
           onChange={onTabChange}
           type="card"
+          size="small"
+          className="responsive-tabs"
           items={[
-            { key: "ALL", label: `Tất cả` },
+            {
+              key: "ALL",
+              label: <span className="text-xs md:text-sm">Tất cả</span>,
+            },
             {
               key: "PendingApproval",
-              label: `Chờ duyệt`,
-              icon: <ClockCircleOutlined />,
+              label: <span className="text-xs md:text-sm">Chờ duyệt</span>,
+              icon: <ClockCircleOutlined className="text-xs md:text-sm" />,
             },
             {
               key: "Approved",
-              label: `Đã duyệt`,
-              icon: <CheckCircleOutlined />,
+              label: <span className="text-xs md:text-sm">Đã duyệt</span>,
+              icon: <CheckCircleOutlined className="text-xs md:text-sm" />,
             },
             {
               key: "Rejected",
-              label: `Đã từ chối`,
-              icon: <CloseCircleOutlined />,
+              label: <span className="text-xs md:text-sm">Đã từ chối</span>,
+              icon: <CloseCircleOutlined className="text-xs md:text-sm" />,
             },
           ]}
         />
 
-        <Table
-          columns={columns}
-          dataSource={filteredReports}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showTotal: (total) => `Tổng ${total} báo cáo`,
-          }}
-          onChange={handleTableChange}
-          className="mt-4"
-        />
+        {/* Desktop Table */}
+        <div className="hidden md:block">
+          <Table
+            columns={columns}
+            dataSource={filteredReports}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showTotal: (total) => `Tổng ${total} báo cáo`,
+            }}
+            onChange={handleTableChange}
+            className="mt-4"
+          />
+        </div>
+
+        {/* Mobile Responsive Table */}
+        <div className="md:hidden mt-4">
+          <ResponsiveTable
+            data={filteredReports}
+            columns={columns}
+            loading={loading}
+            onRowClick={(record) => setSelectedReportId(record.id)}
+            renderActions={renderMobileActions}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showTotal: (total) => `Tổng ${total} báo cáo`,
+            }}
+            onPaginationChange={(page, pageSize) => {
+              fetchReports(page, pageSize, currentTab);
+            }}
+          />
+        </div>
       </Card>
 
       {/* Modal Từ chối */}

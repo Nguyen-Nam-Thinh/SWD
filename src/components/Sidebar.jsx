@@ -1,4 +1,5 @@
 import { NavLink, Link } from "react-router-dom";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -7,6 +8,8 @@ import {
   BarChart3,
   ShieldCheck,
   Settings,
+  Menu,
+  X,
 } from "lucide-react";
 import authService from "../services/authService";
 
@@ -21,6 +24,9 @@ const Sidebar = () => {
   // 1. Lấy thông tin User hiện tại
   const user = authService.getUserData();
   const currentRole = user?.role; // Ví dụ: "Staff" hoặc "Admin"
+
+  // State để quản lý việc mở/đóng sidebar trên mobile/tablet
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // 2. Cấu hình danh sách Menu
   // allowedRoles: Danh sách các vai trò ĐƯỢC PHÉP nhìn thấy menu này
@@ -87,56 +93,91 @@ const Sidebar = () => {
     item.allowedRoles.includes(currentRole),
   );
 
+  // 4. Hàm toggle sidebar
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // 5. Hàm đóng sidebar (khi click vào link trên mobile)
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
-    <aside className="w-64 bg-[#001529] text-white min-h-screen flex flex-col fixed left-0 top-0 bottom-0 z-50">
-      {/* --- LOGO --- */}
-      <Link
-        to="/"
-        className="h-16 flex items-center justify-center border-b border-gray-700 hover:bg-[#1890ff]/10 transition-colors cursor-pointer"
+    <>
+      {/* Nút Hamburger Menu - Chỉ hiển thị trên tablet/mobile */}
+      <button
+        onClick={toggleSidebar}
+        className="md:hidden fixed top-4 left-4 z-[60] text-slate-700 p-2 rounded-lg shadow-lg hover:bg-[#1890ff] hover:text-white transition-colors"
+        aria-label="Toggle Menu"
       >
-        <span className="text-xl font-bold tracking-wider text-white">
-          UNICA FINANCE
-        </span>
-      </Link>
+        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
 
-      {/* --- MENU LIST --- */}
-      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-        {visibleMenu.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${
-                isActive
-                  ? "bg-[#1890ff] text-white shadow-md translate-x-1"
-                  : "text-gray-400 hover:bg-[#1890ff]/10 hover:text-white"
-              }`
-            }
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      {/* Overlay - Đóng sidebar khi click bên ngoài trên mobile */}
+      {isSidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={closeSidebar}
+        />
+      )}
 
-      {/* --- USER INFO (Footer Sidebar) --- */}
-      <div className="p-4 border-t border-gray-700 bg-[#000c17]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold">
-            {user?.username?.charAt(0).toUpperCase() || "U"}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold truncate w-32">
-              {user?.username}
-            </span>
-            <span className="text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded w-fit">
-              {user?.role}
-            </span>
+      {/* Sidebar */}
+      <aside
+        className={`w-64 bg-[#001529] text-white min-h-screen flex flex-col fixed left-0 top-0 bottom-0 z-50 transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
+      >
+        {/* --- LOGO --- */}
+        <Link
+          to="/"
+          className="h-16 flex items-center justify-center border-b border-gray-700 hover:bg-[#1890ff]/10 transition-colors cursor-pointer"
+        >
+          <span className="text-xl font-bold tracking-wider text-white">
+            FinReports
+          </span>
+        </Link>
+
+        {/* --- MENU LIST --- */}
+        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+          {visibleMenu.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              onClick={closeSidebar}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${
+                  isActive
+                    ? "bg-[#1890ff] text-white shadow-md translate-x-1"
+                    : "text-gray-400 hover:bg-[#1890ff]/10 hover:text-white"
+                }`
+              }
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* --- USER INFO (Footer Sidebar) --- */}
+        <div className="p-4 border-t border-gray-700 bg-[#000c17]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold">
+              {user?.username?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold truncate w-32">
+                {user?.username}
+              </span>
+              <span className="text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded w-fit">
+                {user?.role}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

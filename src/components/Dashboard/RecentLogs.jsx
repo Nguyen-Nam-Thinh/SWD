@@ -12,7 +12,7 @@ const RecentLogs = ({ data = [], loading = false }) => {
       key: "timestamp",
       width: 200,
       render: (text) => (
-        <span className="text-gray-500 text-sm">
+        <span className="text-gray-500 text-xs md:text-sm">
           {dayjs(text).format("DD/MM/YYYY HH:mm")}
         </span>
       ),
@@ -22,7 +22,11 @@ const RecentLogs = ({ data = [], loading = false }) => {
       dataIndex: "username",
       key: "username",
       width: 300,
-      render: (text) => <Text strong>{text}</Text>,
+      render: (text) => (
+        <Text strong className="text-sm">
+          {text}
+        </Text>
+      ),
     },
     {
       title: "Hành động",
@@ -45,27 +49,36 @@ const RecentLogs = ({ data = [], loading = false }) => {
           label = "Xóa";
         }
 
-        return <Tag color={color}>{label}</Tag>;
+        return (
+          <Tag color={color} className="text-xs">
+            {label}
+          </Tag>
+        );
       },
     },
     {
       title: "Mô tả",
       dataIndex: "description",
       key: "description",
-      ellipsis: true, // Tự động cắt ngắn nếu quá dài
-      render: (text) => <span className="text-gray-600">{text}</span>,
+      render: (text) => (
+        <span className="text-gray-600 text-xs md:text-sm break-words">
+          {text}
+        </span>
+      ),
     },
   ];
 
   return (
     <Card
-      title="Nhật ký hoạt động gần đây"
+      title={
+        <span className="text-base md:text-lg">Nhật ký hoạt động gần đây</span>
+      }
       variant="borderless"
       className="shadow-sm"
       extra={
         <a
           href="/dashboard/audit-logs"
-          className="text-blue-600 hover:underline text-sm font-medium"
+          className="text-blue-600 hover:underline text-xs md:text-sm font-medium"
         >
           Xem tất cả
         </a>
@@ -76,9 +89,9 @@ const RecentLogs = ({ data = [], loading = false }) => {
         columns={columns}
         dataSource={data}
         loading={loading}
-        pagination={false} // Tắt phân trang
-        size="middle"
-        scroll={{ x: 700 }} // Cho phép cuộn ngang trên mobile
+        pagination={false}
+        size="small"
+        scroll={{ x: 600 }}
       />
     </Card>
   );

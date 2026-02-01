@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button, message, Space, Popconfirm, Spin } from "antd";
-import { ArrowLeftOutlined, SaveOutlined, SendOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  SaveOutlined,
+  SendOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 import DocumentViewer from "../DraftReport/DocumentViewer";
 import MetricTable from "../DraftReport/MetricTable";
 import reportService from "../../services/reportService";
@@ -34,7 +39,9 @@ const SplitComparisonView = ({ reportId, onBack }) => {
   const handleValueChange = (value, metricCode) => {
     setDetails((prev) => {
       const newDetails = [...prev];
-      const idx = newDetails.findIndex((item) => item.metricCode === metricCode);
+      const idx = newDetails.findIndex(
+        (item) => item.metricCode === metricCode,
+      );
       if (idx > -1) newDetails[idx].finalValue = value;
       return newDetails;
     });
@@ -43,10 +50,13 @@ const SplitComparisonView = ({ reportId, onBack }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const changedItems = details.filter((item) => item.aiValue !== item.finalValue);
+      const changedItems = details.filter(
+        (item) => item.aiValue !== item.finalValue,
+      );
       if (changedItems.length === 0) {
         message.info("Chưa có thay đổi để lưu.");
-        setSaving(false); return;
+        setSaving(false);
+        return;
       }
       await reportService.saveDraftDetails(reportId, changedItems);
       message.success("Đã lưu nháp!");
@@ -74,40 +84,78 @@ const SplitComparisonView = ({ reportId, onBack }) => {
   };
 
   if (loading) {
-    return <div className="h-[calc(100vh-100px)] flex flex-col justify-center items-center bg-gray-50"><Spin size="large" /></div>;
+    return (
+      <div className="h-[calc(100vh-100px)] flex flex-col justify-center items-center bg-gray-50">
+        <Spin size="large" />
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-85px)] bg-white -m-6">
+    <div className="flex flex-col h-[calc(100vh-85px)] bg-white -m-6 md:-mx-4">
       {/* HEADER */}
-      <div className="h-16 border-b border-gray-200 px-6 flex items-center justify-between bg-white shadow-sm z-20">
-        <div className="flex items-center gap-4">
-          <Button icon={<ArrowLeftOutlined />} onClick={onBack}>Quay lại</Button>
-          <div className="h-8 w-px bg-gray-200 mx-2"></div>
+      <div className="sticky top-16 h-auto md:h-16 border-b border-gray-200 px-3 md:px-6 py-3 md:py-0 flex flex-col md:flex-row md:items-center justify-between bg-white shadow-sm z-30 gap-3 md:gap-0">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button icon={<ArrowLeftOutlined />} onClick={onBack} size="small">
+            <span className="hidden md:inline">Quay lại</span>
+          </Button>
+          <div className="hidden md:block h-8 w-px bg-gray-200 mx-2"></div>
           <div className="flex flex-col">
-            <div className="font-bold text-lg text-gray-800 leading-tight">{reportInfo?.companyName || "---"}</div>
+            <div className="font-bold text-sm md:text-lg text-gray-800 leading-tight">
+              {reportInfo?.companyName || "---"}
+            </div>
             <div className="text-xs text-gray-500 flex items-center gap-2">
-              <span className="bg-blue-50 text-blue-700 px-1.5 rounded font-medium">{reportInfo?.year}</span>
+              <span className="bg-blue-50 text-blue-700 px-1.5 rounded font-medium">
+                {reportInfo?.year}
+              </span>
               <span>• Quý {reportInfo?.period}</span>
             </div>
           </div>
         </div>
-        <Space>
-          <Button icon={<SaveOutlined />} loading={saving} onClick={handleSave}>Lưu nháp</Button>
-          <Popconfirm title="Xác nhận gửi duyệt?" onConfirm={handleSubmit} okText="Gửi đi" cancelText="Hủy" icon={<ExclamationCircleOutlined style={{ color: "#1890ff" }} />}>
-            <Button type="primary" icon={<SendOutlined />} className="bg-blue-600">Gửi duyệt</Button>
+        <Space size="small" className="w-full md:w-auto flex justify-end">
+          <Button
+            icon={<SaveOutlined />}
+            loading={saving}
+            onClick={handleSave}
+            size="small"
+          >
+            <span className="hidden sm:inline">Lưu nháp</span>
+          </Button>
+          <Popconfirm
+            title="Xác nhận gửi duyệt?"
+            onConfirm={handleSubmit}
+            okText="Gửi đi"
+            cancelText="Hủy"
+            icon={<ExclamationCircleOutlined style={{ color: "#1890ff" }} />}
+          >
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              className="bg-blue-600"
+              size="small"
+            >
+              <span className="hidden sm:inline">Gửi duyệt</span>
+            </Button>
           </Popconfirm>
         </Space>
       </div>
 
       {/* BODY */}
-      <div className="flex flex-1 overflow-hidden relative">
-        <div className="w-1/2 h-full border-r border-gray-300 bg-gray-100 flex flex-col overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+        {/* PDF Viewer - Trên mobile ở trên, desktop ở bên trái */}
+        <div className="w-full md:w-1/2 h-[50vh] md:h-full border-b md:border-b-0 md:border-r border-gray-300 bg-gray-100 flex flex-col overflow-hidden">
           <DocumentViewer reportId={reportId} activeMetadata={activeMetadata} />
         </div>
-        <div className="w-1/2 h-full overflow-y-auto bg-white flex flex-col">
-          <div className="p-6">
-            <MetricTable data={details} loading={loading} onValueChange={handleValueChange} onMetricFocus={handleMetricFocus} />
+
+        {/* Metric Table - Trên mobile ở dưới, desktop ở bên phải */}
+        <div className="w-full md:w-1/2 h-[50vh] md:h-full overflow-y-auto bg-white flex flex-col">
+          <div className="p-3 md:p-6">
+            <MetricTable
+              data={details}
+              loading={loading}
+              onValueChange={handleValueChange}
+              onMetricFocus={handleMetricFocus}
+            />
           </div>
         </div>
       </div>

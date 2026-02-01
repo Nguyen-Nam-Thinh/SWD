@@ -30,13 +30,13 @@ const Home = () => {
 
               <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight text-slate-900">
                 Quản trị dòng tiền <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-cyan-500">
                   Hiệu quả & Tối ưu
                 </span>
               </h1>
 
               <p className="text-lg text-slate-600 max-w-xl leading-relaxed">
-                Unica Finance giúp doanh nghiệp của bạn kiểm soát tài chính, tự
+                FinReports giúp doanh nghiệp của bạn kiểm soát tài chính, tự
                 động hóa báo cáo và dự báo dòng tiền bằng công nghệ AI tiên tiến
                 nhất.
               </p>
@@ -185,9 +185,9 @@ const Home = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 font-bold text-xl text-white mb-4">
               <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white text-xs">
-                U
+                FR
               </div>
-              UNICA FINANCE
+              FinReports
             </div>
             <p className="text-sm max-w-xs">
               Đồng hành cùng sự thịnh vượng của doanh nghiệp Việt. Giải pháp tài
@@ -238,7 +238,7 @@ const Home = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t border-slate-800 text-center text-xs">
-          © 2024 Unica Finance. All rights reserved.
+          © 2024 FinReports. All rights reserved.
         </div>
       </footer>
     </div>

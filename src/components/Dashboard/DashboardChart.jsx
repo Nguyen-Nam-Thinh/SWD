@@ -44,11 +44,11 @@ const DashboardChart = ({ chartData, loading }) => {
 
     // Trường hợp 3: Có dữ liệu -> Vẽ biểu đồ
     return (
-      <div style={{ height: 350, width: "100%" }}>
+      <div className="h-64 md:h-87.5 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={currentData}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
             <CartesianGrid
               strokeDasharray="3 3"

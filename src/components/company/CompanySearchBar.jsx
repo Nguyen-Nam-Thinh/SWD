@@ -48,9 +48,11 @@ const CompanySearchBar = ({
 
       {hasActiveFilters && <Button onClick={onReset}>Đặt lại</Button>}
 
-      <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-        Thêm công ty
-      </Button>
+      {onAdd && (
+        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
+          Thêm công ty
+        </Button>
+      )}
     </div>
   );
 };

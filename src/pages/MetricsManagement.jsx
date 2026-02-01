@@ -1,14 +1,16 @@
-import { Form, Modal, message } from "antd";
-import { useState, useEffect } from "react";
+import { Form, Modal, message, Button, Tag, Space } from "antd";
+import { useState, useEffect, useRef } from "react";
+import { Edit, Trash2 } from "lucide-react";
 import metricService from "../services/metricService";
 import MetricsSearchBar from "../components/metrics/MetricsSearchBar";
 import MetricsTable from "../components/metrics/MetricsTable";
 import MetricsModal from "../components/metrics/MetricsModal";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const MetricsManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const formRef = useRef(null);
   const [metrics, setMetrics] = useState([]);
   const [editingMetric, setEditingMetric] = useState(null);
   const [pagination, setPagination] = useState({
@@ -83,7 +85,6 @@ const MetricsManagement = () => {
   // Mở modal thêm mới
   const handleAdd = () => {
     setEditingMetric(null);
-    form.resetFields();
     setIsModalOpen(true);
   };
 
@@ -92,7 +93,6 @@ const MetricsManagement = () => {
     try {
       const metricDetail = await metricService.getMetricById(record.id);
       setEditingMetric(metricDetail);
-      form.setFieldsValue(metricDetail);
       setIsModalOpen(true);
     } catch (error) {
       message.error("Không thể tải thông tin metric");
@@ -119,10 +119,71 @@ const MetricsManagement = () => {
     });
   };
 
+  // Render mobile actions
+  const renderMobileActions = (record) => (
+    <div className="flex gap-2 flex-wrap">
+      <Button
+        size="small"
+        icon={<Edit size={14} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleEdit(record);
+        }}
+        className="flex items-center gap-1 text-blue-600"
+      >
+        Sửa
+      </Button>
+      <div onClick={(e) => e.stopPropagation()}>
+        <Button
+          size="small"
+          danger
+          icon={<Trash2 size={14} />}
+          onClick={() => handleDelete(record)}
+          className="flex items-center gap-1"
+        >
+          Xóa
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Columns config with labels for ResponsiveTable
+  const columns = [
+    {
+      title: "Mã Metric",
+      label: "Mã Metric",
+      dataIndex: "metricCode",
+      key: "metricCode",
+      render: (text) => <Tag color="blue">{text}</Tag>,
+    },
+    {
+      title: "Tên Metric",
+      label: "Tên Metric",
+      dataIndex: "metricName",
+      key: "metricName",
+    },
+    {
+      title: "Đơn Vị",
+      label: "Đơn Vị",
+      dataIndex: "unit",
+      key: "unit",
+      render: (text) => <Tag color="green">{text}</Tag>,
+    },
+    {
+      title: "Mô Tả",
+      label: "Mô Tả",
+      dataIndex: "description",
+      key: "description",
+      render: (text) => <div className="truncate max-w-xs">{text || "-"}</div>,
+    },
+  ];
+
   // Submit form
   const handleSubmit = async () => {
+    if (!formRef.current) return;
+
     try {
-      const values = await form.validateFields();
+      const values = await formRef.current.validateFields();
       setLoading(true);
 
       if (editingMetric) {
@@ -136,7 +197,7 @@ const MetricsManagement = () => {
       }
 
       setIsModalOpen(false);
-      form.resetFields();
+      formRef.current.resetFields();
       loadMetrics(pagination.current, pagination.pageSize, filters);
     } catch (error) {
       if (error.errorFields) {
@@ -152,9 +213,9 @@ const MetricsManagement = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold">Danh sách Metrics</h2>
+    <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-3">
+        <h2 className="text-base md:text-lg font-bold">Danh sách Metrics</h2>
 
         <MetricsSearchBar
           searchField={searchField}
@@ -168,24 +229,43 @@ const MetricsManagement = () => {
         />
       </div>
 
-      <MetricsTable
-        metrics={metrics}
-        loading={loading}
-        pagination={pagination}
-        onTableChange={handleTableChange}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {/* Desktop Table */}
+      <div className="hidden md:block">
+        <MetricsTable
+          metrics={metrics}
+          loading={loading}
+          pagination={pagination}
+          onTableChange={handleTableChange}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </div>
+
+      {/* Mobile Responsive Table */}
+      <div className="md:hidden">
+        <ResponsiveTable
+          data={metrics}
+          columns={columns}
+          loading={loading}
+          renderActions={renderMobileActions}
+          pagination={pagination}
+          onPaginationChange={(page, pageSize) => {
+            handleTableChange({ current: page, pageSize });
+          }}
+        />
+      </div>
 
       <MetricsModal
         open={isModalOpen}
         editingMetric={editingMetric}
-        form={form}
+        formRef={formRef}
         loading={loading}
         onSubmit={handleSubmit}
         onCancel={() => {
           setIsModalOpen(false);
-          form.resetFields();
+          if (formRef.current) {
+            formRef.current.resetFields();
+          }
           setEditingMetric(null);
         }}
       />
