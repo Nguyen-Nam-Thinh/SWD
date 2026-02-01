@@ -33,6 +33,9 @@ const ReportApprovalView = ({ reportId, onBack }) => {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  // State cho highlight metric trong PDF
+  const [activeMetadata, setActiveMetadata] = useState(null);
+
   // Check permissions - chỉ Manager và Admin có quyền approve/reject
   const canApprove = usePermission("approve_report", false);
   const canReject = usePermission("reject_report", false);
@@ -58,6 +61,11 @@ const ReportApprovalView = ({ reportId, onBack }) => {
 
     fetchDetail();
   }, [reportId]);
+
+  // Xử lý focus vào metric trong PDF
+  const handleMetricFocus = (boundingBox, pageNumber) => {
+    setActiveMetadata({ boundingBox, pageNumber });
+  };
 
   // Xử lý Duyệt
   const handleApprove = async () => {
@@ -182,7 +190,7 @@ const ReportApprovalView = ({ reportId, onBack }) => {
       <div className="flex flex-1 overflow-hidden">
         {/* PDF Viewer */}
         <div className="w-1/2 h-full border-r border-gray-300 bg-gray-100 flex flex-col">
-          <DocumentViewer reportId={reportId} />
+          <DocumentViewer reportId={reportId} activeMetadata={activeMetadata} />
         </div>
 
         {/* Metric Table (READ ONLY) */}
@@ -196,6 +204,7 @@ const ReportApprovalView = ({ reportId, onBack }) => {
               loading={loading}
               readOnly={true} // Bật cờ này để disable input
               onValueChange={() => {}}
+              onMetricFocus={handleMetricFocus}
             />
           </div>
         </div>

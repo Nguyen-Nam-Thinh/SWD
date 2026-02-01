@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
@@ -16,6 +17,8 @@ import DraftReport from "./pages/DraftReport";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
+import Chatbox from "./components/Chat/ChatBox";
+import companyService from "./services/companyService";
 
 import "./App.css";
 
@@ -26,6 +29,26 @@ const ROLES = {
 };
 
 function App() {
+  const [companies, setCompanies] = useState([]);
+
+  // Fetch companies cho chatbox (chỉ khi đã đăng nhập)
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      // Kiểm tra đã đăng nhập chưa
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const response = await companyService.getCompanies();
+        setCompanies(response.items || response || []);
+      } catch (error) {
+        console.error("Failed to fetch companies for chatbox:", error);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -68,12 +91,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="settings" element={<div>Chưa làm</div>} />
         </Route>
 
         {/* --- 404 Page --- */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      {/* AI Chatbox - Global */}
+      <Chatbox companies={companies} />
     </BrowserRouter>
   );
 }
