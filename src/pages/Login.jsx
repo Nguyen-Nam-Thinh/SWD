@@ -13,6 +13,7 @@ import {
 import {
   UserOutlined,
   LockOutlined,
+  ArrowLeftOutlined,
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import authService from "../services/authService";
@@ -70,6 +71,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex bg-[#f0f2f5]">
       {/* LEFT SIDE: Intro / Branding */}
+
       <div className="hidden lg:flex w-1/2 bg-[#001529] relative flex-col justify-between p-16 text-white overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
@@ -80,9 +82,17 @@ const Login = () => {
         ></div>
 
         <div className="relative z-10">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            type="link"
+            onClick={() => navigate("/")}
+            className="mb-4 pl-0 text-gray-500"
+          >
+            Quay lại trang chủ
+          </Button>
           <div className="flex items-center gap-3 text-3xl font-bold mb-6">
             <SafetyCertificateOutlined className="text-[#1890ff]" />
-            <span>UNICA FINANCE</span>
+            <span> FinReports </span>
           </div>
           <p className="text-gray-400 text-lg max-w-md">
             Hệ thống quản trị tài chính tập trung, bảo mật và hiệu quả dành cho

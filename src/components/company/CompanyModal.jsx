@@ -1,21 +1,46 @@
 import { Modal, Form, Input, Select } from "antd";
+import { useEffect } from "react";
 
 const { TextArea } = Input;
 
 const CompanyModal = ({
   open,
   editingCompany,
-  form,
   loading,
   onSubmit,
   onCancel,
 }) => {
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (open && editingCompany) {
+      form.setFieldsValue(editingCompany);
+    } else if (open) {
+      form.resetFields();
+    }
+  }, [open, editingCompany, form]);
+
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      await onSubmit(values, editingCompany);
+      form.resetFields();
+    } catch (error) {
+      // Validation failed - form will show errors
+    }
+  };
+
+  const handleCancel = () => {
+    form.resetFields();
+    onCancel();
+  };
+
   return (
     <Modal
       title={editingCompany ? "Chỉnh Sửa Công Ty" : "Thêm Công Ty Mới"}
       open={open}
-      onOk={onSubmit}
-      onCancel={onCancel}
+      onOk={handleOk}
+      onCancel={handleCancel}
       confirmLoading={loading}
       okText={editingCompany ? "Cập nhật" : "Thêm"}
       cancelText="Hủy"

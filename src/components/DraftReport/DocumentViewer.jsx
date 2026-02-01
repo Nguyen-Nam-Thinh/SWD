@@ -6,14 +6,15 @@ import reportService from "../../services/reportService";
 // Cấu hình worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 
 const DocumentViewer = ({ reportId, activeMetadata }) => {
   const [loading, setLoading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [containerWidth, setContainerWidth] = useState(600);
+  const [isMobile, setIsMobile] = useState(false);
 
   const containerRef = useRef(null);
   const pageRefs = useRef({});
@@ -41,13 +42,24 @@ const DocumentViewer = ({ reportId, activeMetadata }) => {
 
   // 2. Responsive Width
   useEffect(() => {
+    const updateSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setContainerWidth(entry.contentRect.width - 32);
       }
     });
     if (containerRef.current) resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
+
+    return () => {
+      window.removeEventListener("resize", updateSize);
+      resizeObserver.disconnect();
+    };
   }, []);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
@@ -63,8 +75,8 @@ const DocumentViewer = ({ reportId, activeMetadata }) => {
       if (pageElement) {
         setTimeout(() => {
           pageElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
+            behavior: "smooth",
+            block: "start",
           });
         }, 100);
       }
@@ -85,7 +97,7 @@ const DocumentViewer = ({ reportId, activeMetadata }) => {
       // 10 đơn vị trên thang 1000 tương đương 1% kích thước trang.
       // Điều chỉnh số này để ô to hơn hoặc nhỏ hơn.
       const PADDING_X = 10; // Nới rộng chiều ngang
-      const PADDING_Y = 5;  // Nới rộng chiều dọc
+      const PADDING_Y = 5; // Nới rộng chiều dọc
 
       // Tính toán toạ độ mới có Padding (Không vượt quá giới hạn 0-1000)
       const new_ymin = Math.max(0, ymin - PADDING_Y);
@@ -100,19 +112,19 @@ const DocumentViewer = ({ reportId, activeMetadata }) => {
       const width = ((new_xmax - new_xmin) / 1000) * 100;
 
       const style = {
-        position: 'absolute',
+        position: "absolute",
         top: `${top}%`,
         left: `${left}%`,
         height: `${height}%`,
         width: `${width}%`,
 
         // Style hiển thị
-        backgroundColor: 'rgba(255, 255, 0, 0.25)', // Giảm độ đậm để nhìn rõ chữ bên dưới
-        border: '2px solid #ff4d4f', // Viền đỏ rõ ràng
+        backgroundColor: "rgba(255, 255, 0, 0.25)", // Giảm độ đậm để nhìn rõ chữ bên dưới
+        border: "2px solid #ff4d4f", // Viền đỏ rõ ràng
         zIndex: 50,
-        borderRadius: '3px',
-        pointerEvents: 'none',
-        boxShadow: '0 0 0 1px rgba(255, 77, 79, 0.3)' // Thêm viền mờ bên ngoài cho nổi bật
+        borderRadius: "3px",
+        pointerEvents: "none",
+        boxShadow: "0 0 0 1px rgba(255, 77, 79, 0.3)", // Thêm viền mờ bên ngoài cho nổi bật
       };
 
       return <div className="highlight-box animate-pulse" style={style} />;
@@ -123,7 +135,11 @@ const DocumentViewer = ({ reportId, activeMetadata }) => {
   };
 
   if (loading) {
-    return <div className="h-full flex justify-center items-center"><Spin size="large" /></div>;
+    return (
+      <div className="h-full flex justify-center items-center">
+        <Spin size="large" />
+      </div>
+    );
   }
 
   if (!pdfUrl) {
@@ -131,42 +147,46 @@ const DocumentViewer = ({ reportId, activeMetadata }) => {
   }
 
   return (
-    <div className="h-full w-full bg-gray-500 overflow-y-auto p-4" ref={containerRef}>
+    <div
+      className="h-full w-full bg-gray-500 overflow-y-auto p-1 md:p-4"
+      ref={containerRef}
+    >
       <Document
         file={pdfUrl}
         onLoadSuccess={onDocumentLoadSuccess}
         loading={<Spin />}
-        className="flex flex-col items-center gap-4"
+        className="flex flex-col items-center gap-2 md:gap-4"
       >
-        {numPages && Array.from(new Array(numPages), (el, index) => {
-          const pageNumber = index + 1;
-          const isTargetPage = activeMetadata?.pageNumber === pageNumber;
+        {numPages &&
+          Array.from(new Array(numPages), (el, index) => {
+            const pageNumber = index + 1;
+            const isTargetPage = activeMetadata?.pageNumber === pageNumber;
 
-          return (
-            <div
-              key={pageNumber}
-              ref={(el) => (pageRefs.current[pageNumber] = el)}
-              className="relative shadow-lg"
-            >
-              <Page
-                pageNumber={pageNumber}
-                width={containerWidth}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                scale={1.0}
+            return (
+              <div
+                key={pageNumber}
+                ref={(el) => (pageRefs.current[pageNumber] = el)}
+                className="relative shadow-lg"
               >
-                {/* Chỉ vẽ Highlight nếu đúng trang */}
-                {isTargetPage && activeMetadata.boundingBox && (
-                  <HighlightBox bbox={activeMetadata.boundingBox} />
-                )}
-              </Page>
+                <Page
+                  pageNumber={pageNumber}
+                  width={containerWidth}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  scale={isMobile ? 0.75 : 1.0}
+                >
+                  {/* Chỉ vẽ Highlight nếu đúng trang */}
+                  {isTargetPage && activeMetadata.boundingBox && (
+                    <HighlightBox bbox={activeMetadata.boundingBox} />
+                  )}
+                </Page>
 
-              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
-                Trang {pageNumber}
+                <div className="absolute bottom-0.5 right-0.5 md:bottom-1 md:right-1 bg-black/50 text-white text-[10px] md:text-xs px-1 md:px-2 py-0.5 rounded">
+                  Trang {pageNumber}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </Document>
     </div>
   );

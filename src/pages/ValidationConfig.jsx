@@ -1,14 +1,24 @@
 // src/pages/ValidationConfig.jsx
 import React, { useState, useEffect } from "react";
-import { Table, Button, Switch, message, Popconfirm, Space, Tooltip } from "antd";
+import {
+  Table,
+  Button,
+  Switch,
+  message,
+  Popconfirm,
+  Space,
+  Tooltip,
+} from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Edit, Trash2 } from "lucide-react";
 import {
   getFormulas,
   createFormula,
   updateFormula,
-  deleteFormula
+  deleteFormula,
 } from "../services/formulaService";
 import FormulaModal from "../components/Formulas/FormulaModal";
+import ResponsiveTable from "../components/ResponsiveTable";
 
 const ValidationConfig = () => {
   const [data, setData] = useState([]);
@@ -52,7 +62,7 @@ const ValidationConfig = () => {
           formulaName: values.formulaName,
           expression: values.expression,
           tolerance: values.tolerance,
-          isActive: values.isActive
+          isActive: values.isActive,
         };
         await updateFormula(editingRecord.id, updateData);
         message.success("Cập nhật thành công!");
@@ -91,7 +101,7 @@ const ValidationConfig = () => {
         formulaName: record.formulaName,
         expression: record.expression,
         tolerance: record.tolerance,
-        isActive: checked // Giá trị mới
+        isActive: checked, // Giá trị mới
       };
 
       // Gọi API Update (chúng ta update UI lạc quan hoặc chờ API xong mới reload)
@@ -103,10 +113,59 @@ const ValidationConfig = () => {
     }
   };
 
+  // Render mobile actions
+  const renderMobileActions = (record) => (
+    <div className="flex gap-2 flex-wrap items-center">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold text-slate-600">
+          Trạng thái:
+        </span>
+        <Switch
+          size="small"
+          checked={record.isActive}
+          onChange={(checked) => {
+            handleToggleActive(record, checked);
+          }}
+          onClick={(checked, e) => e.stopPropagation()}
+        />
+      </div>
+      <Button
+        size="small"
+        icon={<Edit size={14} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleOpenModal(record);
+        }}
+        className="flex items-center gap-1 text-blue-600"
+      >
+        Sửa
+      </Button>
+      <div onClick={(e) => e.stopPropagation()}>
+        <Popconfirm
+          title="Bạn có chắc muốn xóa?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Xóa"
+          cancelText="Hủy"
+          okButtonProps={{ danger: true }}
+        >
+          <Button
+            size="small"
+            danger
+            icon={<Trash2 size={14} />}
+            className="flex items-center gap-1"
+          >
+            Xóa
+          </Button>
+        </Popconfirm>
+      </div>
+    </div>
+  );
+
   // Cấu hình cột
   const columns = [
     {
       title: "Tên quy tắc",
+      label: "Tên quy tắc",
       dataIndex: "formulaName",
       key: "formulaName",
       width: "20%",
@@ -115,27 +174,30 @@ const ValidationConfig = () => {
           <div className="font-semibold">{text}</div>
           <div className="text-xs text-gray-400">{record.targetMetricCode}</div>
         </div>
-      )
+      ),
     },
     {
       title: "Biểu thức kiểm tra",
+      label: "Biểu thức",
       dataIndex: "expression",
       key: "expression",
       render: (text) => (
-        <code className="bg-slate-100 px-2 py-1 rounded text-red-500 font-mono border border-slate-200 block w-fit">
+        <code className="bg-slate-100 px-1 md:px-2 py-1 rounded text-red-500 font-mono text-xs border border-slate-200 block w-fit break-all">
           {text}
         </code>
       ),
     },
     {
       title: "Sai số",
+      label: "Sai số",
       dataIndex: "tolerance",
       key: "tolerance",
       width: 100,
-      align: 'center'
+      align: "center",
     },
     {
       title: "Trạng thái",
+      label: "Trạng thái",
       key: "isActive",
       width: 100,
       render: (_, record) => (
@@ -147,9 +209,10 @@ const ValidationConfig = () => {
     },
     {
       title: "Hành động",
+      label: "Hành động",
       key: "actions",
       width: 120,
-      align: 'center',
+      align: "center",
       render: (_, record) => (
         <Space>
           <Tooltip title="Chỉnh sửa">
@@ -167,39 +230,64 @@ const ValidationConfig = () => {
               cancelText="Hủy"
               okButtonProps={{ danger: true }}
             >
-              <Button type="text" icon={<DeleteOutlined className="text-red-500" />} />
+              <Button
+                type="text"
+                icon={<DeleteOutlined className="text-red-500" />}
+              />
             </Popconfirm>
           </Tooltip>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm h-full">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-lg font-bold text-gray-800">Cấu hình Validation</h2>
-          <p className="text-gray-500 text-sm">
-            Thiết lập các công thức toán học để kiểm tra tính đúng đắn của báo cáo.
+    <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm h-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
+        <div className="flex-1">
+          <h2 className="text-base md:text-lg font-bold text-gray-800">
+            Cấu hình Validation
+          </h2>
+          <p className="text-gray-500 text-xs md:text-sm">
+            Thiết lập các công thức toán học để kiểm tra tính đúng đắn của báo
+            cáo.
           </p>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => handleOpenModal(null)} // null -> Mode Create
+          onClick={() => handleOpenModal(null)}
+          size="small"
+          className="w-full sm:w-auto md:!h-8"
         >
-          Thêm công thức
+          <span className="hidden sm:inline">Thêm công thức</span>
+          <span className="sm:hidden">Thêm</span>
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+      {/* Desktop Table */}
+      <div className="hidden md:block">
+        <Table
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 10 }}
+        />
+      </div>
+
+      {/* Mobile Responsive Table */}
+      <div className="md:hidden">
+        <ResponsiveTable
+          data={data}
+          columns={columns.filter(
+            (col) => col.key !== "actions" && col.key !== "isActive",
+          )}
+          loading={loading}
+          renderActions={renderMobileActions}
+          searchable={false}
+        />
+      </div>
 
       {/* Component Modal tách rời */}
       <FormulaModal

@@ -62,7 +62,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-3 md:p-0">
       {/* Các thẻ Card dùng state stats và loading riêng */}
       <DashboardStats data={stats} loading={statsLoading} />
 

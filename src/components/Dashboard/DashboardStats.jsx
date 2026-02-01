@@ -37,7 +37,7 @@ const DashboardStats = ({ data }) => {
   }
 
   return (
-    <Row gutter={16}>
+    <Row gutter={[16, 16]}>
       {statItems.map((item, index) => (
         <Col span={8} key={index} xs={24} sm={12} md={8}>
           <Card
@@ -45,10 +45,10 @@ const DashboardStats = ({ data }) => {
             className="shadow-sm hover:shadow-md transition-shadow"
           >
             <Statistic
-              title={item.title}
+              title={<span className="text-sm md:text-base">{item.title}</span>}
               value={item.value}
               prefix={item.icon}
-              styles={{ content: { color: item.color } }}
+              valueStyle={{ fontSize: "1.5rem", color: item.color }}
             />
           </Card>
         </Col>
