@@ -238,7 +238,7 @@ const Home = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t border-slate-800 text-center text-xs">
-          © 2024 FinReports. All rights reserved.
+          © 2024 FinReports.
         </div>
       </footer>
     </div>

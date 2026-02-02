@@ -75,12 +75,6 @@ const PublicHeader = () => {
               >
                 Đăng nhập
               </Link>
-              <Link
-                to="/register"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full transition-all shadow-lg shadow-blue-600/20"
-              >
-                Mở tài khoản
-              </Link>
             </>
           )}
         </div>
