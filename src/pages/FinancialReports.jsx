@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Input, Card, Tag, Empty, Spin, message, Tabs } from "antd";
+import { Input, Card, Tag, Empty, Spin, message, Tabs, Button } from "antd";
 import {
   SearchOutlined,
   FileTextOutlined,
   CalendarOutlined,
   BarChartOutlined,
   FileSearchOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import financialReportService from "../services/financialReportService";
 import FinancialChart from "../components/FinancialChart";
@@ -61,7 +62,7 @@ const FinancialReports = () => {
     window.open(downloadUrl, "_blank");
   };
 
-  const handleCardClick = (report) => {
+  const handleCardClick = () => {
     // Chuyển sang tab biểu đồ khi click vào card
     setActiveTab("chart");
   };
@@ -132,7 +133,7 @@ const FinancialReports = () => {
                           key={report.id}
                           hoverable
                           className="shadow-md hover:shadow-xl transition-all"
-                          onClick={() => handleCardClick(report)}
+                          onClick={() => handleCardClick()}
                         >
                           <div className="space-y-4">
                             {/* Company Info */}
@@ -181,6 +182,21 @@ const FinancialReports = () => {
                                   "vi-VN",
                                 )}
                               </div>
+                            </div>
+
+                            {/* Download Button */}
+                            <div className="pt-3 border-t border-slate-100">
+                              <Button
+                                type="primary"
+                                icon={<DownloadOutlined />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(report.filePath);
+                                }}
+                                block
+                              >
+                                Tải xuống báo cáo
+                              </Button>
                             </div>
                           </div>
                         </Card>
