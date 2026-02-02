@@ -59,25 +59,39 @@ const FinancialReportUpload = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
+      // Validate file tồn tại
+      if (!values.file || values.file.length === 0) {
+        message.error("Vui lòng chọn file để tải lên");
+        setLoading(false);
+        return;
+      }
+
+      // Validate year
+      const yearValue = values.year ? values.year.year() : null;
+      if (!yearValue || yearValue < 2000 || yearValue > 2100) {
+        message.error("Năm phải từ 2000 đến 2100");
+        setLoading(false);
+        return;
+      }
+
       const formData = new FormData();
 
       // Map các trường theo yêu cầu Swagger
       formData.append("CompanyId", values.companyId);
-      formData.append("Year", values.year.year()); // Lấy số năm từ dayjs
+      formData.append("Year", yearValue);
       formData.append("Period", values.period);
       formData.append("PeriodType", values.periodType);
-
-      // File object từ Antd Upload
-      if (values.file && values.file.length > 0) {
-        formData.append("File", values.file[0].originFileObj);
-      }
+      formData.append("File", values.file[0].originFileObj);
 
       await reportService.uploadReport(formData);
       message.success("Tải lên báo cáo thành công!");
       navigate("/dashboard/draft-report");
     } catch (error) {
       console.error(error);
-      message.error(error.response?.data?.message || "Lỗi khi tải lên báo cáo");
+      const errorMsg = error.response?.data?.errors
+        ? Object.values(error.response.data.errors).flat().join(", ")
+        : error.response?.data?.message || "Lỗi khi tải lên báo cáo";
+      message.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -179,12 +193,28 @@ const FinancialReportUpload = () => {
               <Form.Item
                 name="year"
                 label="Năm tài chính"
-                rules={[{ required: true, message: "Vui lòng chọn năm" }]}
+                rules={[
+                  { required: true, message: "Vui lòng chọn năm" },
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.reject();
+                      const year = value.year();
+                      if (year < 2000 || year > 2100) {
+                        return Promise.reject("Năm phải từ 2000 đến 2100");
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
               >
                 <DatePicker
                   picker="year"
                   className="w-full"
                   placeholder="Chọn năm"
+                  disabledDate={(current) => {
+                    const year = current.year();
+                    return year < 2000 || year > 2100;
+                  }}
                 />
               </Form.Item>
             </Col>
