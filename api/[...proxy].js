@@ -1,4 +1,3 @@
-// File: api/[...proxy].js
 import { Readable } from "stream";
 
 // 1. QUAN TRỌNG: Tắt bodyParser để giữ nguyên định dạng file khi upload/download
@@ -94,16 +93,4 @@ export default async function handler(req, res) {
       res.status(500).json({ error: "Proxy Error", message: error.message });
     }
   }
-
-  const response = await fetch(targetUrl, fetchOptions);
-  const responseContentType = response.headers.get("content-type");
-  
-  let data;
-  if (responseContentType && responseContentType.includes("application/json")) {
-    data = await response.json();
-  } else {
-    data = await response.text();
-  }
-
-  res.status(response.status).json(data);
 }
