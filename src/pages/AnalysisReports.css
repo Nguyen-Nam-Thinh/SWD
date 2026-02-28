@@ -1,7 +1,9 @@
 /* Markdown Content Styling */
-.analysis-content {
+.analysis-content,
+.markdown-content {
     color: #1f2937;
-    line-height: 1.75;
+    line-height: 1.8;
+    font-size: 15px;
 }
 
 .analysis-content h1,
@@ -9,140 +11,260 @@
 .analysis-content h3,
 .analysis-content h4,
 .analysis-content h5,
-.analysis-content h6 {
+.analysis-content h6,
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
     color: #111827;
     font-weight: 600;
-    margin-top: 1.5em;
-    margin-bottom: 0.75em;
-    line-height: 1.25;
-}
-
-.analysis-content h1 {
-    font-size: 1.875rem;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 0.5em;
-}
-
-.analysis-content h2 {
-    font-size: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 0.3em;
-}
-
-.analysis-content h3 {
-    font-size: 1.25rem;
-}
-
-.analysis-content h4 {
-    font-size: 1.125rem;
-}
-
-.analysis-content p {
+    margin-top: 2em;
     margin-bottom: 1em;
-    text-align: justify;
+    line-height: 1.3;
+}
+
+.analysis-content h1,
+.markdown-content h1 {
+    font-size: 2rem;
+    border-bottom: 3px solid #3b82f6;
+    padding-bottom: 0.5em;
+    margin-top: 0;
+}
+
+.analysis-content h2,
+.markdown-content h2 {
+    font-size: 1.625rem;
+    border-bottom: 2px solid #60a5fa;
+    padding-bottom: 0.4em;
+    color: #1e40af;
+}
+
+.analysis-content h3,
+.markdown-content h3 {
+    font-size: 1.375rem;
+    color: #1e40af;
+    border-left: 4px solid #3b82f6;
+    padding-left: 0.75em;
+}
+
+.analysis-content h4,
+.markdown-content h4 {
+    font-size: 1.125rem;
+    color: #1e40af;
+}
+
+.analysis-content p,
+.markdown-content p {
+    margin-bottom: 1.25em;
+    text-align: left;
+    line-height: 1.8;
 }
 
 .analysis-content ul,
-.analysis-content ol {
-    margin-bottom: 1em;
-    padding-left: 2em;
+.analysis-content ol,
+.markdown-content ul,
+.markdown-content ol {
+    margin-bottom: 1.5em;
+    padding-left: 2.5em;
+    line-height: 1.8;
 }
 
-.analysis-content li {
+.analysis-content li,
+.markdown-content li {
+    margin-bottom: 0.75em;
+}
+
+.analysis-content li > p,
+.markdown-content li > p {
     margin-bottom: 0.5em;
 }
 
-.analysis-content strong {
-    font-weight: 600;
+.analysis-content strong,
+.markdown-content strong {
+    font-weight: 700;
     color: #111827;
 }
 
-.analysis-content em {
+.analysis-content em,
+.markdown-content em {
     font-style: italic;
-}
-
-.analysis-content code {
-    background-color: #f3f4f6;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-size: 0.875em;
-    font-family: 'Courier New', monospace;
-    color: #dc2626;
-}
-
-.analysis-content pre {
-    background-color: #f9fafb;
-    padding: 1em;
-    border-radius: 6px;
-    overflow-x: auto;
-    margin-bottom: 1em;
-    border: 1px solid #e5e7eb;
-}
-
-.analysis-content pre code {
-    background-color: transparent;
-    padding: 0;
     color: #374151;
 }
 
-.analysis-content blockquote {
-    border-left: 4px solid #3b82f6;
-    padding-left: 1em;
-    margin-left: 0;
-    margin-bottom: 1em;
-    color: #4b5563;
-    font-style: italic;
+.analysis-content code,
+.markdown-content code {
+    background-color: #f3f4f6;
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    font-size: 0.875em;
+    font-family: 'Courier New', Consolas, monospace;
+    color: #dc2626;
+    border: 1px solid #e5e7eb;
 }
 
-.analysis-content table {
-    width: 100%;
-    border-collapse: collapse;
+.analysis-content pre,
+.markdown-content pre {
+    background-color: #f9fafb;
+    padding: 1.25em;
+    border-radius: 8px;
+    overflow-x: auto;
     margin-bottom: 1.5em;
-    font-size: 0.875rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.analysis-content pre code,
+.markdown-content pre code {
+    background-color: transparent;
+    padding: 0;
+    color: #374151;
+    border: none;
+}
+
+.analysis-content blockquote,
+.markdown-content blockquote {
+    border-left: 5px solid #3b82f6;
+    padding: 1em 1em 1em 1.5em;
+    margin: 1.5em 0;
+    background-color: #eff6ff;
+    color: #1e40af;
+    font-style: italic;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Table Styling - Improved */
+.analysis-content table,
+.markdown-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 2em 0;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .analysis-content table th,
-.analysis-content table td {
-    border: 1px solid #d1d5db;
-    padding: 0.75em;
+.analysis-content table td,
+.markdown-content table th,
+.markdown-content table td {
+    border: 1px solid #e5e7eb;
+    padding: 12px 16px;
     text-align: left;
 }
 
-.analysis-content table th {
-    background-color: #f3f4f6;
-    font-weight: 600;
-    color: #111827;
+/* Header cells */
+.analysis-content table th,
+.markdown-content table th {
+    background: linear-gradient(to bottom, #3b82f6, #2563eb);
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.analysis-content table tr:nth-child(even) {
+/* First column in data rows - labels */
+.analysis-content table td:first-child,
+.markdown-content table td:first-child {
+    font-weight: 600;
+    color: #374151;
     background-color: #f9fafb;
 }
 
-.analysis-content table tr:hover {
-    background-color: #f3f4f6;
+/* Numeric columns - right align */
+.analysis-content table td:nth-child(2),
+.analysis-content table td:nth-child(3),
+.analysis-content table td:nth-child(4),
+.markdown-content table td:nth-child(2),
+.markdown-content table td:nth-child(3),
+.markdown-content table td:nth-child(4) {
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-variant-numeric: tabular-nums;
 }
 
-.analysis-content hr {
-    border: none;
-    border-top: 1px solid #e5e7eb;
-    margin: 2em 0;
+/* Last column - comments/notes */
+.analysis-content table td:last-child,
+.markdown-content table td:last-child {
+    text-align: left;
+    color: #4b5563;
+    line-height: 1.6;
 }
 
-.analysis-content a {
-    color: #3b82f6;
-    text-decoration: none;
+.analysis-content table tr,
+.markdown-content table tr {
+    transition: background-color 0.2s ease;
 }
 
-.analysis-content a:hover {
-    text-decoration: underline;
+.analysis-content table tbody tr:nth-child(even),
+.markdown-content table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
 }
 
-/* Specific styling for financial data */
-.analysis-content table td:last-child {
+.analysis-content table tbody tr:hover,
+.markdown-content table tbody tr:hover {
+    background-color: #eff6ff;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Center align for specific columns */
+.analysis-content table th[align="center"],
+.analysis-content table td[align="center"],
+.markdown-content table th[align="center"],
+.markdown-content table td[align="center"] {
+    text-align: center;
+}
+
+/* Right align for numeric headers */
+.analysis-content table th:nth-child(2),
+.analysis-content table th:nth-child(3),
+.analysis-content table th:nth-child(4),
+.markdown-content table th:nth-child(2),
+.markdown-content table th:nth-child(3),
+.markdown-content table th:nth-child(4) {
     text-align: right;
 }
 
-.analysis-content table th[align="center"],
-.analysis-content table td[align="center"] {
-    text-align: center;
+.analysis-content hr,
+.markdown-content hr {
+    border: none;
+    border-top: 2px solid #e5e7eb;
+    margin: 3em 0;
+}
+
+.analysis-content a,
+.markdown-content a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.analysis-content a:hover,
+.markdown-content a:hover {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+/* Responsive table */
+@media screen and (max-width: 768px) {
+    .analysis-content table,
+    .markdown-content table {
+        font-size: 12px;
+    }
+    
+    .analysis-content table th,
+    .analysis-content table td,
+    .markdown-content table th,
+    .markdown-content table td {
+        padding: 8px 10px;
+    }
 }

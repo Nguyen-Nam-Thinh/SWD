@@ -247,11 +247,12 @@ const FinancialAnalysis = () => {
           open={modalOpen}
           onCancel={handleCloseModal}
           footer={null}
-          width={1000}
+          width={1200}
           styles={{
             body: {
-              maxHeight: "70vh",
+              maxHeight: "75vh",
               overflowY: "auto",
+              padding: "24px",
             },
           }}
         >

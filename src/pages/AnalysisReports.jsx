@@ -807,8 +807,8 @@ const AnalysisReports = () => {
             Đóng
           </Button>,
         ]}
-        width={1000}
-        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+        width={1200}
+        bodyStyle={{ maxHeight: "75vh", overflowY: "auto", padding: "24px" }}
       >
         {analysisResult && (
           <div className="space-y-4">
