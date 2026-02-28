@@ -1,27 +1,11 @@
 import React, { useEffect, useState } from "react";
-import {
-  Button,
-  message,
-  Space,
-  Popconfirm,
-  Spin,
-  Modal,
-  Input,
-  Tag,
-} from "antd";
-import {
-  ArrowLeftOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  FilePdfOutlined,
-} from "@ant-design/icons";
+import { Button, message, Spin, Tag } from "antd";
+import { ArrowLeftOutlined, FilePdfOutlined } from "@ant-design/icons";
 
 // Import các component cũ
 import DocumentViewer from "../DraftReport/DocumentViewer";
 import MetricTable from "../DraftReport/MetricTable";
 import reportService from "../../services/reportService";
-import { usePermission, useCurrentUser } from "../../hooks/useAuth";
-import { authMiddleware } from "../../middleware";
 
 const ReportApprovalView = ({ reportId, onBack }) => {
   const [loading, setLoading] = useState(false);
@@ -29,17 +13,8 @@ const ReportApprovalView = ({ reportId, onBack }) => {
   const [reportInfo, setReportInfo] = useState(null);
   const [details, setDetails] = useState([]);
 
-  // State Modal Từ chối
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-
   // State cho highlight metric trong PDF
   const [activeMetadata, setActiveMetadata] = useState(null);
-
-  // Check permissions - chỉ Manager và Admin có quyền approve/reject
-  const canApprove = usePermission("approve_report", false);
-  const canReject = usePermission("reject_report", false);
-  const currentUser = useCurrentUser();
 
   // Load dữ liệu
   useEffect(() => {
@@ -77,7 +52,7 @@ const ReportApprovalView = ({ reportId, onBack }) => {
 
     setProcessing(true);
     try {
-      await reportService.approveReport(reportId);
+      await reportService.updateReportStatus(reportId, "APPROVED");
       message.success("Đã duyệt báo cáo thành công!");
       onBack(); // Quay lại danh sách
     } catch (error) {
@@ -87,29 +62,25 @@ const ReportApprovalView = ({ reportId, onBack }) => {
       setProcessing(false);
     }
   };
-
-  // Xử lý Từ chối
-  const handleRejectSubmit = async () => {
-    // Double check permission
-    if (!canReject) {
-      message.error("Bạn không có quyền từ chối báo cáo");
-      return;
-    }
-
-    if (!rejectReason.trim()) {
-      message.warning("Vui lòng nhập lý do từ chối");
+  // Xử lý "Đã xem xét" - Cập nhật lại dữ liệu details
+  const handleReview = async () => {
+    if (details.length === 0) {
+      message.warning("Không có dữ liệu để cập nhật");
       return;
     }
 
     setProcessing(true);
     try {
-      await reportService.rejectReport(reportId, rejectReason);
-      message.success("Đã từ chối báo cáo!");
-      setIsRejectModalOpen(false);
-      onBack();
+      await reportService.updateReportDetails(reportId, details);
+      message.success("Đã cập nhật lại dữ liệu báo cáo!");
+      // Reload lại dữ liệu để đồng bộ
+      const data = await reportService.getReportById(reportId);
+      const { details: detailsData, ...info } = data;
+      setReportInfo(info);
+      setDetails(detailsData || []);
     } catch (error) {
-      // Error đã được xử lý bởi errorHandlerMiddleware
-      console.error("Reject error:", error);
+      console.error("Review error:", error);
+      message.error("Lỗi khi cập nhật dữ liệu");
     } finally {
       setProcessing(false);
     }
@@ -150,44 +121,28 @@ const ReportApprovalView = ({ reportId, onBack }) => {
                     : "orange"
               }
             >
-              {reportInfo.status}
+              {reportInfo.status === "PendingApproval"
+                ? "Chờ duyệt"
+                : reportInfo.status === "Approved"
+                  ? "Đã duyệt"
+                  : reportInfo.status === "Rejected"
+                    ? "Từ chối"
+                    : reportInfo.status}
             </Tag>
           )}
         </div>
 
-        {/* Nút thao tác (Chỉ hiện nếu status là Pending và có quyền) */}
-        {reportInfo?.status === "Pending" && (canApprove || canReject) && (
-          <Space size="small" className="w-full md:w-auto flex justify-end">
-            {canReject && (
-              <Button
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => setIsRejectModalOpen(true)}
-                size="small"
-              >
-                <span className="hidden sm:inline">Từ chối</span>
-              </Button>
-            )}
-            {canApprove && (
-              <Popconfirm
-                title="Duyệt báo cáo này?"
-                description={`Bạn (${currentUser?.fullName}) sẽ phê duyệt báo cáo này.`}
-                onConfirm={handleApprove}
-                okText="Đồng ý"
-                cancelText="Hủy"
-              >
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  loading={processing}
-                  className="bg-green-600"
-                  size="small"
-                >
-                  <span className="hidden sm:inline">Phê duyệt</span>
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
+        {/* Nút thao tác (Chỉ hiện nếu status là PendingApproval) */}
+        {reportInfo?.status === "PendingApproval" && (
+          <Button
+            type="primary"
+            onClick={handleReview}
+            loading={processing}
+            size="small"
+          >
+            <span className="hidden sm:inline">Đã xem xét</span>
+            <span className="sm:hidden">Xem xét</span>
+          </Button>
         )}
       </div>
 
@@ -218,23 +173,6 @@ const ReportApprovalView = ({ reportId, onBack }) => {
           </div>
         </div>
       </div>
-
-      {/* Modal Từ chối */}
-      <Modal
-        title="Từ chối báo cáo"
-        open={isRejectModalOpen}
-        onOk={handleRejectSubmit}
-        onCancel={() => setIsRejectModalOpen(false)}
-        okText="Xác nhận"
-        okButtonProps={{ danger: true, loading: processing }}
-      >
-        <p>Lý do từ chối:</p>
-        <Input.TextArea
-          rows={4}
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-        />
-      </Modal>
     </div>
   );
 };

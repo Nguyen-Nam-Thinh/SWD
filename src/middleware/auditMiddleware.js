@@ -8,9 +8,9 @@ class AuditMiddleware {
 
     // Các actions cần audit
     this.auditableActions = [
-      "/FinancialReports/.*/(approve|reject)",
-      "/FinancialReports/upload",
-      "/FinancialReports/.*/(submit|delete)",
+      "/financial-reports/.*/status",
+      "/financial-reports",
+      "/financial-reports/.*/delete",
       "/Users/.*/delete",
       "/Auth/login",
       "/Companies/.*/(delete)",
