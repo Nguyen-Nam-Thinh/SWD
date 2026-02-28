@@ -9,7 +9,7 @@ import {
   Menu,
   X,
   Factory, // Icon cho Industry
-  FolderTree // Icon cho Metric Groups
+  FolderTree, // Icon cho Metric Groups
 } from "lucide-react";
 import authService from "../services/authService";
 
@@ -67,6 +67,12 @@ const Sidebar = () => {
       label: "Quản lý Báo cáo",
       path: "/dashboard/reports",
       icon: <Building2 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
+    },
+    {
+      label: "Phân tích Báo cáo",
+      path: "/dashboard/analysis-reports",
+      icon: <BarChart3 size={20} />,
       allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
     },
     {
@@ -140,9 +146,10 @@ const Sidebar = () => {
               end={item.end}
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${isActive
-                  ? "bg-[#1890ff] text-white shadow-md translate-x-1"
-                  : "text-gray-400 hover:bg-[#1890ff]/10 hover:text-white"
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${
+                  isActive
+                    ? "bg-[#1890ff] text-white shadow-md translate-x-1"
+                    : "text-gray-400 hover:bg-[#1890ff]/10 hover:text-white"
                 }`
               }
             >

@@ -41,9 +41,15 @@ const PublicHeader = () => {
           </a>
           <Link
             to="/financial-reports"
-            className="hover:text-blue-600 transition-colors font-semibold text-blue-600"
+            className="hover:text-blue-600 transition-colors"
           >
             Xem các công ty
+          </Link>
+          <Link
+            to="/financial-analysis"
+            className="hover:text-blue-600 transition-colors font-semibold text-blue-600"
+          >
+            Phân tích AI
           </Link>
         </nav>
 
@@ -102,9 +108,15 @@ const PublicHeader = () => {
           </a>
           <Link
             to="/financial-reports"
-            className="block text-blue-600 font-semibold"
+            className="block text-slate-600 font-medium"
           >
             Xem các công ty
+          </Link>
+          <Link
+            to="/financial-analysis"
+            className="block text-blue-600 font-semibold"
+          >
+            Phân tích AI
           </Link>
           {isLoggedIn ? (
             <Link to="/dashboard" className="block text-blue-600 font-bold">
