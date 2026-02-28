@@ -23,7 +23,6 @@ const CompanyManagement = () => {
   const [searchField, setSearchField] = useState("ticker");
   const [searchValue, setSearchValue] = useState("");
 
-  // Load danh sách công ty
   const loadCompanies = async (page = 1, pageSize = 10, filterParams = {}) => {
     setLoading(true);
     try {
@@ -33,8 +32,6 @@ const CompanyManagement = () => {
         ...filterParams,
       });
 
-      // Giả sử API trả về { items: [], totalCount: 0 }
-      // Nếu API trả về khác, cần điều chỉnh
       setCompanies(data.items || data);
       setPagination({
         current: page,
@@ -43,7 +40,6 @@ const CompanyManagement = () => {
       });
     } catch (error) {
       message.error("Không thể tải danh sách công ty");
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -53,25 +49,17 @@ const CompanyManagement = () => {
     loadCompanies();
   }, []);
 
-  // Xử lý tìm kiếm
   const handleSearch = () => {
     const newFilters = {};
     if (searchValue.trim()) {
-      if (searchField === "ticker") {
-        newFilters.ticker = searchValue.trim();
-      } else if (searchField === "companyName") {
-        newFilters.companyName = searchValue.trim();
-      } else if (searchField === "industryCode") {
-        newFilters.industryCode = searchValue.trim();
-      } else if (searchField === "stockExchange") {
-        newFilters.stockExchange = searchValue.trim();
-      }
+      if (searchField === "ticker") newFilters.ticker = searchValue.trim();
+      else if (searchField === "companyName") newFilters.companyName = searchValue.trim();
+      else if (searchField === "stockExchange") newFilters.stockExchange = searchValue.trim();
     }
     setFilters(newFilters);
     loadCompanies(1, pagination.pageSize, newFilters);
   };
 
-  // Reset tìm kiếm
   const handleResetSearch = () => {
     setSearchValue("");
     setSearchField("ticker");
@@ -79,18 +67,15 @@ const CompanyManagement = () => {
     loadCompanies(1, pagination.pageSize, {});
   };
 
-  // Xử lý thay đổi pagination
   const handleTableChange = (newPagination) => {
     loadCompanies(newPagination.current, newPagination.pageSize, filters);
   };
 
-  // Mở modal thêm mới
   const handleAdd = () => {
     setEditingCompany(null);
     setIsModalOpen(true);
   };
 
-  // Mở modal sửa
   const handleEdit = async (record) => {
     try {
       const companyDetail = await companyService.getCompanyById(record.id);
@@ -101,7 +86,6 @@ const CompanyManagement = () => {
     }
   };
 
-  // Xóa công ty
   const handleDelete = (record) => {
     Modal.confirm({
       title: "Xác nhận xóa",
@@ -121,32 +105,27 @@ const CompanyManagement = () => {
     });
   };
 
-  // Submit form
   const handleSubmit = async (values, company) => {
     try {
       setLoading(true);
-
       if (company) {
-        // Cập nhật
         await companyService.updateCompany(company.id, values);
         message.success("Cập nhật công ty thành công");
       } else {
-        // Tạo mới
         await companyService.createCompany(values);
         message.success("Thêm công ty thành công");
       }
-
       setIsModalOpen(false);
       loadCompanies(pagination.current, pagination.pageSize, filters);
     } catch (error) {
       message.error(company ? "Cập nhật thất bại" : "Thêm công ty thất bại");
-      throw error; // Để modal không đóng khi có lỗi
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Cấu hình columns dùng chung cho desktop và mobile
+  // Cấu hình columns cho bản Mobile (Responsive Table)
   const columns = [
     {
       title: "Mã CK (Ticker)",
@@ -160,26 +139,22 @@ const CompanyManagement = () => {
       dataIndex: "companyName",
       key: "companyName",
       label: "Tên công ty",
-      render: (text) => (
-        <span className="block truncate max-w-xs" title={text}>
-          {text}
-        </span>
-      ),
+      render: (text) => <span className="block truncate max-w-xs" title={text}>{text}</span>,
     },
     {
       title: "Sàn",
       dataIndex: "stockExchange",
       key: "stockExchange",
       label: "Sàn",
-      render: (ex) => (
-        <Tag color={ex === "HOSE" ? "purple" : "orange"}>{ex}</Tag>
-      ),
+      render: (ex) => <Tag color={ex === "HOSE" ? "purple" : "orange"}>{ex}</Tag>,
     },
     {
-      title: "Mã ngành",
-      dataIndex: "industryCode",
-      key: "industryCode",
-      label: "Mã ngành",
+      // SỬA Ở ĐÂY CHO MOBILE:
+      title: "Ngành",
+      dataIndex: "industryName",
+      key: "industryName",
+      label: "Ngành",
+      render: (text) => text ? text : "-",
     },
     {
       title: "Website",
@@ -187,19 +162,7 @@ const CompanyManagement = () => {
       key: "website",
       label: "Website",
       render: (url) =>
-        url ? (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline block truncate max-w-xs"
-            title={url}
-          >
-            {url}
-          </a>
-        ) : (
-          "-"
-        ),
+        url ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block truncate max-w-xs">{url}</a> : "-",
     },
     {
       title: "Hành động",
@@ -207,24 +170,10 @@ const CompanyManagement = () => {
       label: "Thao tác",
       render: (_, record) => (
         <div className="flex gap-2 justify-end">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEdit(record);
-            }}
-            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            title="Sửa"
-          >
+          <button onClick={(e) => { e.stopPropagation(); handleEdit(record); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Sửa">
             <Edit size={16} />
           </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(record);
-            }}
-            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-            title="Xóa"
-          >
+          <button onClick={(e) => { e.stopPropagation(); handleDelete(record); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Xóa">
             <Trash2 size={16} />
           </button>
         </div>
@@ -236,7 +185,7 @@ const CompanyManagement = () => {
     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
       <h2 className="text-base md:text-lg font-bold mb-4">Danh sách công ty</h2>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <CompanySearchBar
           searchField={searchField}
           setSearchField={setSearchField}
@@ -247,51 +196,21 @@ const CompanyManagement = () => {
           onAdd={null}
           hasActiveFilters={searchValue || Object.keys(filters).length > 0}
         />
-      </div>
-
-      <div className="mb-4">
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
+        <button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto">
           <Edit size={16} />
           Thêm công ty
         </button>
       </div>
 
-      {/* Desktop Table - Ẩn trên mobile */}
       <div className="hidden md:block">
-        <CompanyTable
-          companies={companies}
-          loading={loading}
-          pagination={pagination}
-          onTableChange={handleTableChange}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        <CompanyTable companies={companies} loading={loading} pagination={pagination} onTableChange={handleTableChange} onEdit={handleEdit} onDelete={handleDelete} />
       </div>
 
-      {/* Mobile/Tablet View - Chỉ hiện trên mobile */}
       <div className="md:hidden">
-        <ResponsiveTable
-          columns={columns}
-          data={companies}
-          itemsPerPage={pagination.pageSize}
-          searchable={false}
-          onRowClick={(row) => handleEdit(row)}
-        />
+        <ResponsiveTable columns={columns} data={companies} itemsPerPage={pagination.pageSize} searchable={false} onRowClick={(row) => handleEdit(row)} />
       </div>
 
-      <CompanyModal
-        open={isModalOpen}
-        editingCompany={editingCompany}
-        loading={loading}
-        onSubmit={handleSubmit}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingCompany(null);
-        }}
-      />
+      <CompanyModal open={isModalOpen} editingCompany={editingCompany} loading={loading} onSubmit={handleSubmit} onCancel={() => { setIsModalOpen(false); setEditingCompany(null); }} />
     </div>
   );
 };
