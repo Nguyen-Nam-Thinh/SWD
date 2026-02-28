@@ -11,7 +11,9 @@ import MetricsManagement from "./pages/MetricsManagement";
 import AuditLogs from "./pages/AuditLogs";
 import Upload from "./pages/Upload";
 import Reports from "./pages/ReportsManager";
+import AnalysisReports from "./pages/AnalysisReports";
 import FinancialReports from "./pages/FinancialReports";
+import FinancialAnalysis from "./pages/FinancialAnalysis";
 import DraftReport from "./pages/DraftReport";
 
 // IMPORT 2 TRANG QUẢN LÝ MỚI
@@ -58,6 +60,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/financial-reports" element={<FinancialReports />} />
+        <Route path="/financial-analysis" element={<FinancialAnalysis />} />
 
         {/* --- Protected Dashboard Area --- */}
         <Route
@@ -82,6 +85,7 @@ function App() {
           <Route path="upload" element={<Upload />} />
           <Route path="draft-report" element={<DraftReport />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="analysis-reports" element={<AnalysisReports />} />
 
           <Route path="metrics" element={<MetricsManagement />} />
 
