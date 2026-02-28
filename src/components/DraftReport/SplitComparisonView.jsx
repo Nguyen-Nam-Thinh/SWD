@@ -58,8 +58,8 @@ const SplitComparisonView = ({ reportId, onBack }) => {
         setSaving(false);
         return;
       }
-      await reportService.saveDraftDetails(reportId, changedItems);
-      message.success("Đã lưu nháp!");
+      // API details đã bị xóa - không còn lưu nháp nữa
+      message.info("Chức năng lưu nháp đã được gỡ bỏ.");
     } catch (error) {
       message.error("Lỗi lưu dữ liệu");
     } finally {
@@ -70,8 +70,8 @@ const SplitComparisonView = ({ reportId, onBack }) => {
   const handleSubmit = async () => {
     try {
       message.loading({ content: "Đang xử lý...", key: "submit" });
-      await reportService.saveDraftDetails(reportId, details);
-      await reportService.submitForApproval(reportId);
+      // Chuyển trạng thái sang PENDINGAPPROVAL
+      await reportService.updateReportStatus(reportId, "PENDINGAPPROVAL");
       message.success({ content: "Gửi duyệt thành công!", key: "submit" });
       onBack();
     } catch (error) {

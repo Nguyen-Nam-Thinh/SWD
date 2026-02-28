@@ -5,11 +5,11 @@ class RateLimitMiddleware {
     this.limits = {
       // Định nghĩa giới hạn cho từng endpoint
       default: { maxRequests: 100, windowMs: 60000 }, // 100 requests/phút
-      "/FinancialReports/upload": { maxRequests: 10, windowMs: 60000 }, // 10 uploads/phút
-      "/FinancialReports/.*/(approve|reject)": {
+      "/financial-reports": { maxRequests: 1000, windowMs: 60000 }, // 10 uploads/phút
+      "/financial-reports/.*/status": {
         maxRequests: 30,
         windowMs: 60000,
-      }, // 30 approve/reject/phút
+      }, // 30 status updates/phút
       "/Auth/login": { maxRequests: 5, windowMs: 60000 }, // 5 login attempts/phút
     };
   }

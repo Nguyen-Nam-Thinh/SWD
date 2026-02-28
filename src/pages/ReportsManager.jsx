@@ -111,7 +111,7 @@ const ReportManager = () => {
   // --- CÁC HÀM HÀNH ĐỘNG ---
   const handleQuickApprove = async (id) => {
     try {
-      await reportService.approveReport(id);
+      await reportService.updateReportStatus(id, "APPROVED");
       message.success("Đã duyệt báo cáo!");
       fetchReports(pagination.current, pagination.pageSize, currentTab);
     } catch (e) {
@@ -133,7 +133,11 @@ const ReportManager = () => {
     }
     setProcessing(true);
     try {
-      await reportService.rejectReport(rejectItem.id, rejectReason);
+      await reportService.updateReportStatus(
+        rejectItem.id,
+        "REJECTED",
+        rejectReason,
+      );
       message.success("Đã từ chối báo cáo!");
       setRejectModalOpen(false);
       fetchReports(pagination.current, pagination.pageSize, currentTab);
