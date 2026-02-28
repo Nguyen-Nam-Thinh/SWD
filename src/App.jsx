@@ -8,12 +8,15 @@ import NotFound from "./pages/NotFound";
 import UserManagement from "./pages/UserManagement";
 import CompanyManagement from "./pages/CompanyManagement";
 import MetricsManagement from "./pages/MetricsManagement";
-import ValidationConfig from "./pages/ValidationConfig";
 import AuditLogs from "./pages/AuditLogs";
 import Upload from "./pages/Upload";
 import Reports from "./pages/ReportsManager";
 import FinancialReports from "./pages/FinancialReports";
 import DraftReport from "./pages/DraftReport";
+
+// IMPORT 2 TRANG QUẢN LÝ MỚI
+import IndustryManagement from "./pages/IndustryManagement";
+import MetricGroupManagement from "./pages/MetricGroupManagement";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
@@ -34,7 +37,6 @@ function App() {
   // Fetch companies cho chatbox (chỉ khi đã đăng nhập)
   useEffect(() => {
     const fetchCompanies = async () => {
-      // Kiểm tra đã đăng nhập chưa
       const token = localStorage.getItem("token");
       if (!token) return;
 
@@ -58,7 +60,6 @@ function App() {
         <Route path="/financial-reports" element={<FinancialReports />} />
 
         {/* --- Protected Dashboard Area --- */}
-
         <Route
           path="/dashboard"
           element={
@@ -81,8 +82,13 @@ function App() {
           <Route path="upload" element={<Upload />} />
           <Route path="draft-report" element={<DraftReport />} />
           <Route path="reports" element={<Reports />} />
+
           <Route path="metrics" element={<MetricsManagement />} />
-          <Route path="validation" element={<ValidationConfig />} />
+
+          {/* THÊM 2 ROUTE QUẢN LÝ MỚI VÀO ĐÂY */}
+          <Route path="industries" element={<IndustryManagement />} />
+          <Route path="metric-groups" element={<MetricGroupManagement />} />
+
           <Route
             path="audit"
             element={
