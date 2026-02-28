@@ -7,11 +7,11 @@ const dashboardService = {
     try {
       const [usersRes, companiesRes, reportsRes, logsRes] = await Promise.all([
         // Chỉ lấy 1 bản ghi để xem TotalCount
-        api.get("/Users", { params: { PageSize: 1 } }),
-        api.get("/Companies", { params: { PageSize: 1 } }),
-        api.get("/FinancialReports", { params: { PageSize: 1 } }),
+        api.get("/users", { params: { PageSize: 1 } }),
+        api.get("/companies", { params: { PageSize: 1 } }),
+        api.get("/financial-reports", { params: { PageSize: 1 } }),
         // Lấy log gần đây
-        api.get("/AuditLogs", {
+        api.get("/audit-logs", {
           params: { PageSize: 5, SortBy: "timestamp", IsDescending: true },
         }),
       ]);
@@ -33,8 +33,8 @@ const dashboardService = {
     try {
       // Lấy dữ liệu số lượng lớn để tính toán client-side
       const [usersRes, reportsRes] = await Promise.all([
-        api.get("/Users", { params: { PageSize: 1000 } }),
-        api.get("/FinancialReports", { params: { PageSize: 1000 } }),
+        api.get("/users", { params: { PageSize: 1000 } }),
+        api.get("/financial-reports", { params: { PageSize: 1000 } }),
       ]);
 
       const users = usersRes.data.items || [];
