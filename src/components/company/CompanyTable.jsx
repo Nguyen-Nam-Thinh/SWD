@@ -1,20 +1,14 @@
 import { Table, Button, Tag, Space } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
-const CompanyTable = ({
-  companies,
-  loading,
-  pagination,
-  onTableChange,
-  onEdit,
-  onDelete,
-}) => {
+const CompanyTable = ({ companies, loading, pagination, onTableChange, onEdit, onDelete }) => {
   const columns = [
     {
-      title: "Mã CK (Ticker)",
+      title: <div className="text-center">Mã CK</div>,
       dataIndex: "ticker",
       key: "ticker",
-      render: (text) => <Tag color="blue">{text}</Tag>,
+      width: 100,
+      render: (text) => <Tag color="blue" className="font-bold">{text}</Tag>,
     },
     {
       title: "Tên công ty",
@@ -22,48 +16,35 @@ const CompanyTable = ({
       key: "companyName",
     },
     {
-      title: "Sàn",
+      title: <div className="text-center">Sàn</div>,
       dataIndex: "stockExchange",
       key: "stockExchange",
-      render: (ex) => (
-        <Tag color={ex === "HOSE" ? "purple" : "orange"}>{ex}</Tag>
-      ),
+      width: 100,
+      align: 'center',
+      render: (ex) => <Tag color={ex === "HOSE" ? "purple" : "orange"}>{ex}</Tag>,
     },
     {
-      title: "Mã ngành",
-      dataIndex: "industryCode",
-      key: "industryCode",
+      // SỬA Ở ĐÂY: Đọc trực tiếp trường industryName từ API trả về
+      title: "Ngành",
+      dataIndex: "industryName",
+      key: "industryName",
+      render: (text) => text ? <span className="font-medium text-gray-700">{text}</span> : "-",
     },
     {
       title: "Website",
       dataIndex: "website",
       key: "website",
-      render: (url) =>
-        url ? (
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            {url}
-          </a>
-        ) : (
-          "-"
-        ),
+      render: (url) => url ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 truncate block max-w-[150px]">{url}</a> : "-",
     },
     {
-      title: "Hành động",
+      title: <div className="text-center">Hành động</div>,
       key: "action",
+      width: 100,
+      align: 'center',
       render: (_, record) => (
         <Space>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            className="text-blue-600"
-            onClick={() => onEdit(record)}
-          />
-          <Button
-            type="text"
-            icon={<DeleteOutlined />}
-            danger
-            onClick={() => onDelete(record)}
-          />
+          <Button type="text" icon={<EditOutlined />} className="text-blue-600" onClick={() => onEdit(record)} />
+          <Button type="text" icon={<DeleteOutlined />} danger onClick={() => onDelete(record)} />
         </Space>
       ),
     },

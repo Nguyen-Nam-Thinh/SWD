@@ -1,33 +1,24 @@
 import api from "./api";
 
 const metricService = {
-  // Lấy tất cả metrics
   getMetrics: async (params = {}) => {
-    const response = await api.get("/Metrics", { params });
+    const response = await api.get("/metrics", { params });
     return response.data;
   },
-
-  // Lấy metric theo ID
   getMetricById: async (id) => {
-    const response = await api.get(`/Metrics/${id}`);
+    const response = await api.get(`/metrics/${id}`);
     return response.data;
   },
-
-  // Tạo metric mới
   createMetric: async (metricData) => {
-    const response = await api.post("/Metrics", metricData);
+    const response = await api.post("/metrics", metricData);
     return response.data;
   },
-
-  // Cập nhật metric
   updateMetric: async (id, metricData) => {
-    const response = await api.put(`/Metrics/${id}`, metricData);
+    const response = await api.put(`/metrics/${id}`, metricData);
     return response.data;
   },
-
-  // Xóa metric
   deleteMetric: async (id) => {
-    const response = await api.delete(`/Metrics/${id}`);
+    const response = await api.delete(`/metrics/${id}`);
     return response.data;
   },
 };
