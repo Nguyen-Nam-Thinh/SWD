@@ -8,9 +8,9 @@ import auditMiddleware from "../middleware/auditMiddleware";
 // Tạo axios instance với base URL từ env
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // headers: {
+  //   "Content-Type": "application/json",
+  // },
   timeout: 30000, // 30 seconds timeout
 });
 
