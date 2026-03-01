@@ -4,9 +4,12 @@ import api from "./api";
 const uploadReportService = {
   // Upload báo cáo (Multipart/form-data)
   uploadReport: async (formData) => {
-    // Không set Content-Type header thủ công
-    // Axios sẽ tự động detect FormData và set "multipart/form-data" với boundary
-    const response = await api.post("/financial-reports", formData);
+    // Thêm config headers để ghi đè cái application/json mặc định ở api.js
+    const response = await api.post("/financial-reports", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 
