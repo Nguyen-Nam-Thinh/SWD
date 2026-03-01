@@ -69,7 +69,8 @@ const FinancialReportUpload = () => {
 
       // File object từ Antd Upload
       if (values.file && values.file.length > 0) {
-        formData.append("File", values.file[0].originFileObj);
+        const fileToUpload = values.file[0].originFileObj || values.file[0];
+        formData.append("File", fileToUpload);
       }
 
       await reportService.uploadReport(formData);
