@@ -3,10 +3,15 @@ import { useState, useEffect } from "react";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import industryService from "../services/industryService";
 import IndustryModal from "../components/industry/IndustryModal";
+import authService from "../services/authService"; // THÊM IMPORT NÀY
 
 const { Search } = Input;
 
 const IndustryManagement = () => {
+    // Lấy thông tin user để phân quyền
+    const user = authService.getUserData();
+    const isAdmin = user?.role === "Admin"; // Kiểm tra xem có phải Admin không
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [industries, setIndustries] = useState([]);
@@ -91,7 +96,8 @@ const IndustryManagement = () => {
         }
     };
 
-    const columns = [
+    // Khai báo cột mặc định
+    let columns = [
         {
             title: "Mã Ngành",
             dataIndex: "code",
@@ -115,8 +121,12 @@ const IndustryManagement = () => {
             dataIndex: "description",
             key: "description",
             ellipsis: true
-        },
-        {
+        }
+    ];
+
+    // Nếu là Admin thì Push thêm cột Hành động vào cuối mảng
+    if (isAdmin) {
+        columns.push({
             title: <div className="text-center">Hành động</div>,
             key: "action",
             width: 100,
@@ -127,8 +137,8 @@ const IndustryManagement = () => {
                     <Button type="text" icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
                 </Space>
             ),
-        }
-    ];
+        });
+    }
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -141,9 +151,13 @@ const IndustryManagement = () => {
                         style={{ width: 250 }}
                         allowClear
                     />
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingIndustry(null); setIsModalOpen(true); }}>
-                        Thêm Ngành
-                    </Button>
+
+                    {/* Chỉ hiện nút Thêm nếu là Admin */}
+                    {isAdmin && (
+                        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingIndustry(null); setIsModalOpen(true); }}>
+                            Thêm Ngành
+                        </Button>
+                    )}
                 </div>
             </div>
 

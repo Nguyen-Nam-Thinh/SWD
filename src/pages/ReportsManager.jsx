@@ -27,12 +27,16 @@ import dayjs from "dayjs";
 // Import service và component con
 import reportService from "../services/reportService";
 import ResponsiveTable from "../components/ResponsiveTable";
-// Đảm bảo đường dẫn import component con đúng với cấu trúc thư mục của bạn
 import ReportApprovalView from "../components/Approval/ReportApprovalView";
+import authService from "../services/authService"; // THÊM IMPORT NÀY
 
 const { Title } = Typography;
 
 const ReportManager = () => {
+  // --- PHÂN QUYỀN ---
+  const user = authService.getUserData();
+  const canApprove = user?.role === "Admin"; // Chỉ Admin mới có quyền duyệt/từ chối
+
   // --- STATE ---
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState([]);
@@ -64,17 +68,13 @@ const ReportManager = () => {
         PageSize: pageSize,
       };
 
-      // Thêm filter status nếu không phải "ALL"
       if (status && status !== "ALL") {
         params.Status = status;
       }
 
       const response = await reportService.getReports(params);
-
-      // API trả về object với items và pagination metadata
       const list = response.items || [];
 
-      // Cập nhật pagination từ API response
       setPagination({
         current: response.pageNumber || 1,
         pageSize: response.pageSize || 10,
@@ -82,7 +82,6 @@ const ReportManager = () => {
       });
 
       setReports(list);
-      // Không cần filter ở client nữa vì API đã filter rồi
       setFilteredReports(list);
     } catch (error) {
       console.error("Lỗi fetch:", error);
@@ -94,29 +93,27 @@ const ReportManager = () => {
 
   useEffect(() => {
     fetchReports(1, 10, currentTab);
-  }, []); // Chạy 1 lần khi mount
+  }, []);
 
-  // --- LOGIC CHUYỂN TAB ---
   const onTabChange = (key) => {
     setCurrentTab(key);
-    // Reset về trang 1 và fetch lại dữ liệu với status mới
     fetchReports(1, pagination.pageSize, key);
   };
 
-  // Handle pagination change
   const handleTableChange = (newPagination) => {
     fetchReports(newPagination.current, newPagination.pageSize, currentTab);
   };
 
   // --- CÁC HÀM HÀNH ĐỘNG ---
   const handleQuickApprove = async (id) => {
+    if (!canApprove) return; // Double check
+
     try {
       await reportService.updateReportStatus(id, "APPROVED");
       message.success("Đã duyệt báo cáo!");
       fetchReports(pagination.current, pagination.pageSize, currentTab);
     } catch (e) {
       console.error("Approve error:", e);
-      // Nếu là lỗi 400 nhưng có thể đã cập nhật DB, vẫn reload để kiểm tra
       if (e.response?.status === 400) {
         message.warning("Báo cáo có thể đã được duyệt, đang kiểm tra...");
         fetchReports(pagination.current, pagination.pageSize, currentTab);
@@ -127,6 +124,8 @@ const ReportManager = () => {
   };
 
   const handleConfirmReject = async () => {
+    if (!canApprove) return; // Double check
+
     if (!rejectReason.trim()) {
       message.warning("Vui lòng nhập lý do");
       return;
@@ -143,7 +142,6 @@ const ReportManager = () => {
       fetchReports(pagination.current, pagination.pageSize, currentTab);
     } catch (e) {
       console.error("Reject error:", e);
-      // Nếu là lỗi 400 nhưng có thể đã cập nhật DB, vẫn reload và đóng modal
       if (e.response?.status === 400) {
         message.warning("Báo cáo có thể đã bị từ chối, đang kiểm tra...");
         setRejectModalOpen(false);
@@ -160,7 +158,7 @@ const ReportManager = () => {
     try {
       await reportService.deleteReport(id);
       message.success(`Đã xóa báo cáo ${companyName}`);
-      fetchReports(pagination.current, pagination.pageSize, currentTab); // Giữ nguyên trang hiện tại
+      fetchReports(pagination.current, pagination.pageSize, currentTab);
     } catch (e) {
       message.error("Lỗi khi xóa báo cáo");
       console.error("Delete error:", e);
@@ -182,7 +180,8 @@ const ReportManager = () => {
         Xem
       </Button>
 
-      {record.status === "PendingApproval" && (
+      {/* SỬA: Thêm điều kiện canApprove */}
+      {canApprove && record.status === "PendingApproval" && (
         <>
           <div onClick={(e) => e.stopPropagation()}>
             <Popconfirm
@@ -273,7 +272,6 @@ const ReportManager = () => {
         let color = "default";
         let label = status;
 
-        // Mapping status từ API sang giao diện
         if (status === "PendingApproval") {
           color = "orange";
           label = "Chờ duyệt";
@@ -305,8 +303,8 @@ const ReportManager = () => {
             />
           </Tooltip>
 
-          {/* Chỉ hiện nút duyệt/từ chối khi status là PendingApproval */}
-          {r.status === "PendingApproval" && (
+          {/* SỬA: Thêm điều kiện canApprove */}
+          {canApprove && r.status === "PendingApproval" && (
             <>
               <Tooltip title="Duyệt nhanh">
                 <Popconfirm
