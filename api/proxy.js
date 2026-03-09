@@ -1,4 +1,12 @@
 // Vercel Serverless Function - API Proxy to HTTP Backend
+
+// QUAN TRỌNG: Tắt bodyParser để hỗ trợ FormData upload
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
   const BACKEND_URL = 'http://51.210.176.94:5000/api';
   
@@ -24,14 +32,32 @@ export default async function handler(req, res) {
   console.log(`[Proxy] ${req.method} ${targetUrl}`);
   
   try {
+    // Đọc body từ stream (vì đã tắt bodyParser)
+    let bodyData = null;
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      bodyData = Buffer.concat(chunks);
+    }
+    
     // Prepare headers
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+    const headers = {};
     
     // Forward authorization header
     if (req.headers.authorization) {
       headers['Authorization'] = req.headers.authorization;
+    }
+    
+    // Forward content-type nếu có
+    if (req.headers['content-type']) {
+      headers['Content-Type'] = req.headers['content-type'];
+    }
+    
+    // Forward content-length nếu có
+    if (bodyData && bodyData.length > 0) {
+      headers['Content-Length'] = bodyData.length;
     }
     
     // Prepare fetch options
@@ -40,28 +66,46 @@ export default async function handler(req, res) {
       headers,
     };
     
-    // Add body for non-GET requests
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-      fetchOptions.body = typeof req.body === 'string' 
-        ? req.body 
-        : JSON.stringify(req.body);
+    // Add body nếu có
+    if (bodyData && bodyData.length > 0) {
+      fetchOptions.body = bodyData;
     }
     
     // Forward request to backend
     const response = await fetch(targetUrl, fetchOptions);
     
-    // Get response data
+    // Get response data based on content type
     const contentType = response.headers.get('content-type');
-    let data;
     
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      data = await response.text();
+    // Copy important headers from backend
+    response.headers.forEach((value, key) => {
+      if (key !== 'content-encoding' && key !== 'transfer-encoding') {
+        res.setHeader(key, value);
+      }
+    });
+    
+    // Handle binary/blob responses (PDF, Excel, images, etc.)
+    if (contentType && (
+      contentType.includes('application/pdf') ||
+      contentType.includes('application/vnd.openxmlformats') ||
+      contentType.includes('application/vnd.ms-excel') ||
+      contentType.includes('application/octet-stream') ||
+      contentType.includes('image/')
+    )) {
+      // Stream binary data without parsing
+      const buffer = await response.arrayBuffer();
+      res.status(response.status).send(Buffer.from(buffer));
     }
-    
-    // Forward response status and data
-    res.status(response.status).json(data);
+    // Handle JSON responses
+    else if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      res.status(response.status).json(data);
+    }
+    // Handle text responses
+    else {
+      const data = await response.text();
+      res.status(response.status).send(data);
+    }
     
   } catch (error) {
     console.error('[Proxy Error]:', error);
