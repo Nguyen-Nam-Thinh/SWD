@@ -32,6 +32,9 @@ class LoggingMiddleware {
 
   // Log response
   logResponse(response) {
+    // Kiểm tra nếu là blob response thì không log data
+    const isBlob = response.data instanceof Blob;
+
     const log = {
       type: "RESPONSE",
       timestamp: new Date().toISOString(),
@@ -39,7 +42,7 @@ class LoggingMiddleware {
       statusText: response.statusText,
       method: response.config?.method?.toUpperCase(),
       url: response.config?.url,
-      data: response.data,
+      data: isBlob ? "[Blob Data]" : response.data,
       duration: this.calculateDuration(response),
     };
 
@@ -47,7 +50,7 @@ class LoggingMiddleware {
 
     if (import.meta.env.DEV) {
       console.log(`🟢 [RESPONSE] ${log.status} ${log.method} ${log.url}`, {
-        data: response.data,
+        data: isBlob ? `[Blob ${response.data.size} bytes]` : response.data,
         duration: `${log.duration}ms`,
       });
     }
