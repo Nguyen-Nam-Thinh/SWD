@@ -30,15 +30,7 @@ const PublicHeader = () => {
           >
             Tính năng
           </a>
-          <a
-            href="#solutions"
-            className="hover:text-blue-600 transition-colors"
-          >
-            Giải pháp
-          </a>
-          <a href="#pricing" className="hover:text-blue-600 transition-colors">
-            Bảng giá
-          </a>
+
           <Link
             to="/financial-reports"
             className="hover:text-blue-600 transition-colors"
@@ -100,12 +92,7 @@ const PublicHeader = () => {
           <a href="/#features" className="block text-slate-600 font-medium">
             Tính năng
           </a>
-          <a href="/#solutions" className="block text-slate-600 font-medium">
-            Giải pháp
-          </a>
-          <a href="/#pricing" className="block text-slate-600 font-medium">
-            Bảng giá
-          </a>
+
           <Link
             to="/financial-reports"
             className="block text-slate-600 font-medium"

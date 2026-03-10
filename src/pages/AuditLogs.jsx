@@ -1,5 +1,5 @@
 // src/pages/AuditLogs.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Table, DatePicker, Input, Tag, message, Button, Space } from "antd";
 import { EyeOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { Eye } from "lucide-react";
@@ -32,6 +32,7 @@ const AuditLogs = () => {
   // State cho Modal chi tiết
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const searchTimerRef = useRef(null);
 
   const fetchData = async (
     page = 1,
@@ -80,7 +81,12 @@ const AuditLogs = () => {
   }, []);
 
   const handleSearchChange = (e) => {
-    setFilters({ ...filters, searchTerm: e.target.value });
+    const newFilters = { ...filters, searchTerm: e.target.value };
+    setFilters(newFilters);
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      fetchData(1, pagination.pageSize, newFilters);
+    }, 500);
   };
 
   const onDateRangeChange = (dates) => {
