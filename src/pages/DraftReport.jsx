@@ -47,14 +47,14 @@ const DraftReport = () => {
       // Lấy TẤT CẢ draft và rejected (pageSize lớn để lấy hết)
       const [draftRes, rejectedRes] = await Promise.all([
         reportService.getReports({
-          pageNumber: 1,
-          pageSize: 1000, // Lấy hết tất cả
-          status: "Draft",
+          PageNumber: 1,
+          PageSize: 1000, // Lấy hết tất cả
+          Status: "Draft",
         }),
         reportService.getReports({
-          pageNumber: 1,
-          pageSize: 1000, // Lấy hết tất cả
-          status: "Rejected",
+          PageNumber: 1,
+          PageSize: 1000, // Lấy hết tất cả
+          Status: "Rejected",
         }),
       ]);
 
