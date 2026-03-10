@@ -23,12 +23,17 @@ export default async function handler(req, res) {
   }
   
   // Extract path from query string (from vercel rewrite)
-  // vercel.json rewrites /api/Auth/login -> /api/proxy?path=Auth/login
+  // vercel.json rewrites /api/financial-reports?Status=Draft -> /api/proxy?path=financial-reports&Status=Draft
   const pathParam = req.query.path || '';
   const pathArray = Array.isArray(pathParam) ? pathParam : [pathParam];
   const path = '/' + pathArray.join('/');
-  const targetUrl = `${BACKEND_URL}${path}`;
-  
+
+  // Forward tất cả query params (trừ "path") về backend
+  const queryParams = { ...req.query };
+  delete queryParams.path;
+  const queryString = new URLSearchParams(queryParams).toString();
+  const targetUrl = `${BACKEND_URL}${path}${queryString ? '?' + queryString : ''}`;
+
   console.log(`[Proxy] ${req.method} ${targetUrl}`);
   
   try {
