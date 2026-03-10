@@ -20,6 +20,7 @@ import {
   ClockCircleOutlined,
   SyncOutlined,
   DeleteOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
@@ -402,6 +403,11 @@ const ReportManager = () => {
             {
               key: "ALL",
               label: <span className="text-xs md:text-sm">Tất cả</span>,
+            },
+            {
+              key: "Draft",
+              label: <span className="text-xs md:text-sm">Nháp</span>,
+              icon: <FileTextOutlined className="text-xs md:text-sm" />,
             },
             {
               key: "PendingApproval",
