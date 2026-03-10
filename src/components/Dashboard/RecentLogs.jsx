@@ -1,9 +1,11 @@
 import { Card, Table, Tag, Typography } from "antd";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
 
 const RecentLogs = ({ data = [], loading = false }) => {
+  const navigate = useNavigate();
   // Cấu hình cột cho bảng
   const columns = [
     {
@@ -76,12 +78,12 @@ const RecentLogs = ({ data = [], loading = false }) => {
       variant="borderless"
       className="shadow-sm"
       extra={
-        <a
-          href="/dashboard/audit-logs"
+        <button
+          onClick={() => navigate("/dashboard/audit")}
           className="text-blue-600 hover:underline text-xs md:text-sm font-medium"
         >
           Xem tất cả
-        </a>
+        </button>
       }
     >
       <Table
