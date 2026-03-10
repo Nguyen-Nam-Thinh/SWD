@@ -1,5 +1,5 @@
 import { Form, Modal, message, Tag } from "antd";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Edit, Trash2 } from "lucide-react";
 import companyService from "../services/companyService";
 import CompanySearchBar from "../components/company/CompanySearchBar";
@@ -22,13 +22,14 @@ const CompanyManagement = () => {
   // Search states
   const [searchField, setSearchField] = useState("ticker");
   const [searchValue, setSearchValue] = useState("");
+  const searchTimerRef = useRef(null);
 
   const loadCompanies = async (page = 1, pageSize = 10, filterParams = {}) => {
     setLoading(true);
     try {
       const data = await companyService.getCompanies({
-        pageNumber: page,
-        pageSize: pageSize,
+        PageNumber: page,
+        PageSize: pageSize,
         ...filterParams,
       });
 
@@ -49,16 +50,25 @@ const CompanyManagement = () => {
     loadCompanies();
   }, []);
 
-  const handleSearch = () => {
+  const handleSearch = (value = searchValue) => {
     const newFilters = {};
-    if (searchValue.trim()) {
-      if (searchField === "ticker") newFilters.ticker = searchValue.trim();
-      else if (searchField === "companyName") newFilters.companyName = searchValue.trim();
-      else if (searchField === "stockExchange") newFilters.stockExchange = searchValue.trim();
+    if (value.trim()) {
+      if (searchField === "ticker") newFilters.Ticker = value.trim();
+      else if (searchField === "companyName") newFilters.CompanyName = value.trim();
+      else if (searchField === "stockExchange") newFilters.StockExchange = value.trim();
     }
     setFilters(newFilters);
     loadCompanies(1, pagination.pageSize, newFilters);
   };
+
+  // Debounce: tự động search khi gõ sau 500ms
+  useEffect(() => {
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      handleSearch(searchValue);
+    }, 500);
+    return () => clearTimeout(searchTimerRef.current);
+  }, [searchValue, searchField]);
 
   const handleResetSearch = () => {
     setSearchValue("");

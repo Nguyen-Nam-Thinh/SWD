@@ -1,5 +1,5 @@
 import { Modal, message, Button, Tag, Space, Input, Table } from "antd";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import industryService from "../services/industryService";
 import IndustryModal from "../components/industry/IndustryModal";
@@ -17,14 +17,15 @@ const IndustryManagement = () => {
     const [industries, setIndustries] = useState([]);
     const [editingIndustry, setEditingIndustry] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const searchTimerRef = useRef(null);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
     const loadIndustries = async (page = 1, pageSize = 10, search = "") => {
         setLoading(true);
         try {
             const data = await industryService.getIndustries({
-                pageNumber: page,
-                pageSize: pageSize,
+                PageNumber: page,
+                PageSize: pageSize,
                 SearchTerm: search,
             });
             setIndustries(data.items || []);
@@ -43,6 +44,15 @@ const IndustryManagement = () => {
     const handleSearch = (value) => {
         setSearchTerm(value);
         loadIndustries(1, pagination.pageSize, value);
+    };
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => {
+            loadIndustries(1, pagination.pageSize, value);
+        }, 500);
     };
 
     const handleTableChange = (newPagination) => {
@@ -148,6 +158,8 @@ const IndustryManagement = () => {
                     <Search
                         placeholder="Tìm mã, tên ngành..."
                         onSearch={handleSearch}
+                        onChange={handleSearchChange}
+                        value={searchTerm}
                         style={{ width: 250 }}
                         allowClear
                     />
