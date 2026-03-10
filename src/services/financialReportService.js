@@ -23,6 +23,17 @@ const financialReportService = {
     });
     return response.data;
   },
+
+  // Lấy danh sách reports ở trạng thái Draft
+  getDraftReports: async (params = {}) => {
+    const response = await api.get("/financial-reports", {
+      params: {
+        ...params,
+        Status: "Draft",
+      },
+    });
+    return response.data;
+  },
 };
 
 export default financialReportService;

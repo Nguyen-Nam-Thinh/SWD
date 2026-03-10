@@ -20,6 +20,7 @@ import {
   ClockCircleOutlined,
   SyncOutlined,
   DeleteOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import { Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
@@ -417,6 +418,11 @@ const ReportManager = () => {
               key: "Rejected",
               label: <span className="text-xs md:text-sm">Đã từ chối</span>,
               icon: <CloseCircleOutlined className="text-xs md:text-sm" />,
+            },
+            {
+              key: "Draft",
+              label: <span className="text-xs md:text-sm">Nháp</span>,
+              icon: <EditOutlined className="text-xs md:text-sm" />,
             },
           ]}
         />
