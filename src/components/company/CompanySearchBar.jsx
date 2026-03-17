@@ -1,62 +1,120 @@
 import { Input, Select, Button } from "antd";
-import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  FilterOutlined,
+} from "@ant-design/icons";
 
 const CompanySearchBar = ({
   searchField,
   setSearchField,
   searchValue,
   setSearchValue,
+  stockExchangeFilter,
+  setStockExchangeFilter,
+  industryFilter,
+  setIndustryFilter,
+  industries = [],
   onSearch,
   onReset,
-  onAdd,
-  hasActiveFilters,
+  hasActiveFilters = false,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center w-full md:w-auto">
-      <Select
-        value={searchField}
-        onChange={setSearchField}
-        style={{ width: 150 }}
-        className="w-full sm:w-auto"
-      >
-        <Select.Option value="ticker">Mã CK (Ticker)</Select.Option>
-        <Select.Option value="companyName">Tên Công Ty</Select.Option>
-        <Select.Option value="stockExchange">Sàn Giao Dịch</Select.Option>
-      </Select>
+    <div className="w-full rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 md:p-3">
+      <div className="grid grid-cols-1 md:grid-cols-[150px_1fr_140px_180px_auto] gap-2 items-end">
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Tìm theo
+          </label>
+          <Select
+            value={searchField}
+            onChange={setSearchField}
+            className="w-full"
+            size="small"
+          >
+            <Select.Option value="ticker">Mã CK</Select.Option>
+            <Select.Option value="companyName">Tên công ty</Select.Option>
+          </Select>
+        </div>
 
-      <Input
-        placeholder={
-          searchField === "ticker"
-            ? "Tìm kiếm theo Ticker"
-            : searchField === "companyName"
-              ? "Tìm kiếm theo Tên Công Ty"
-              : "Tìm kiếm theo Sàn GD"
-        }
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-        onPressEnter={onSearch}
-        style={{ width: 280 }}
-        className="w-full sm:w-auto"
-        suffix={
-          <SearchOutlined
-            className="cursor-pointer text-gray-400 hover:text-blue-500"
-            onClick={onSearch}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Từ khóa
+          </label>
+          <Input
+            placeholder={
+              searchField === "ticker" ? "Nhập Mã CK..." : "Nhập tên công ty..."
+            }
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onPressEnter={onSearch}
+            size="small"
+            suffix={
+              <SearchOutlined
+                className="cursor-pointer text-gray-400 hover:text-blue-500"
+                onClick={onSearch}
+              />
+            }
           />
-        }
-      />
+        </div>
 
-      <div className="flex gap-2 mt-2 sm:mt-0">
-        {hasActiveFilters && (
-          <Button onClick={onReset} className="flex-1 sm:flex-none">
-            Đặt lại
-          </Button>
-        )}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Sàn
+          </label>
+          <Select
+            value={stockExchangeFilter}
+            onChange={setStockExchangeFilter}
+            allowClear
+            placeholder="Chọn sàn"
+            className="w-full"
+            size="small"
+            options={[
+              { value: "HOSE", label: "HOSE" },
+              { value: "HNX", label: "HNX" },
+              { value: "UPCOM", label: "UPCOM" },
+            ]}
+          />
+        </div>
 
-        {onAdd && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} className="flex-1 sm:flex-none">
-            Thêm công ty
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Ngành
+          </label>
+          <Select
+            value={industryFilter}
+            onChange={setIndustryFilter}
+            allowClear
+            placeholder="Chọn ngành"
+            className="w-full"
+            size="small"
+            showSearch
+            optionFilterProp="label"
+            options={industries.map((industry) => ({
+              value: industry.id,
+              label: `${industry.code} - ${industry.nameVi}`,
+            }))}
+          />
+        </div>
+
+        <div className="flex gap-1.5 md:justify-end">
+          <Button
+            type="primary"
+            icon={<FilterOutlined />}
+            onClick={onSearch}
+            size="small"
+          >
+            Lọc
           </Button>
-        )}
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={onReset}
+            disabled={!hasActiveFilters}
+            size="small"
+          >
+            Xóa lọc
+          </Button>
+        </div>
       </div>
     </div>
   );

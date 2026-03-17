@@ -18,12 +18,12 @@ import {
   InboxOutlined,
   CloudUploadOutlined,
   ArrowLeftOutlined,
-  PlusOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import companyService from "../services/companyService";
 import reportService from "../services/reportService";
 import CompanyModal from "../components/company/CompanyModal"; // Import modal bạn đã có
+import AddNewButton from "../components/common/AddNewButton";
 
 const { Dragger } = Upload;
 const { Title } = Typography;
@@ -155,14 +155,13 @@ const FinancialReportUpload = () => {
                       {menu}
                       <Divider style={{ margin: "8px 0" }} />
                       <Space style={{ padding: "0 8px 4px" }}>
-                        <Button
-                          type="text"
-                          icon={<PlusOutlined />}
+                        <AddNewButton
                           onClick={() => setIsCompanyModalOpen(true)}
-                          className="text-blue-600 font-medium"
+                          label="Thêm công ty mới ngay"
+                          size="small"
                         >
                           Thêm công ty mới ngay
-                        </Button>
+                        </AddNewButton>
                       </Space>
                     </>
                   )}
@@ -199,9 +198,9 @@ const FinancialReportUpload = () => {
                 rules={[{ required: true }]}
               >
                 <Select>
-                  <Option value="Quarterly">Theo Quý (Quarterly)</Option>
-                  <Option value="Yearly">Theo Năm (Yearly)</Option>
-                  <Option value="HalfYear">Bán niên (HalfYear)</Option>
+                  <Option value="Quarterly">Theo quý</Option>
+                  <Option value="Yearly">Theo năm</Option>
+                  <Option value="HalfYear">Bán niên</Option>
                 </Select>
               </Form.Item>
             </Col>

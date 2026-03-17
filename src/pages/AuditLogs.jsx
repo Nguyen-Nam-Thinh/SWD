@@ -1,7 +1,7 @@
 // src/pages/AuditLogs.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, DatePicker, Input, Tag, message, Button, Space } from "antd";
-import { EyeOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import { Eye } from "lucide-react";
 import dayjs from "dayjs";
 import { getAuditLogs } from "../services/auditLogService";
@@ -9,7 +9,32 @@ import AuditDetailModal from "../components/AuditLog/AuditDetailModal";
 import ResponsiveTable from "../components/ResponsiveTable";
 
 const { RangePicker } = DatePicker;
-const { Search } = Input;
+
+const ACTION_LABEL_MAP = {
+  DELETE: "Xóa",
+  CREATE: "Tạo mới",
+  UPDATE: "Cập nhật",
+  LOGIN: "Đăng nhập",
+  DELETE_REPORT: "Xóa báo cáo",
+  DELETE_USER: "Xóa người dùng",
+  DELETE_COMPANY: "Xóa công ty",
+  DELETE_METRIC: "Xóa chỉ số",
+};
+
+const toVietnameseAction = (actionType = "") => {
+  if (!actionType) return "-";
+  const normalized = actionType.trim().toUpperCase();
+  return ACTION_LABEL_MAP[normalized] || actionType;
+};
+
+const resolveActionColor = (actionType = "") => {
+  const normalized = actionType.trim().toUpperCase();
+  if (normalized.includes("DELETE")) return "red";
+  if (normalized.includes("CREATE")) return "green";
+  if (normalized.includes("UPDATE")) return "blue";
+  if (normalized.includes("LOGIN")) return "gold";
+  return "default";
+};
 
 const AuditLogs = () => {
   const [data, setData] = useState([]);
@@ -32,8 +57,7 @@ const AuditLogs = () => {
   // State cho Modal chi tiết
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const searchTimerRef = useRef(null);
-
+  const [showDateFilter, setShowDateFilter] = useState(false);
   const fetchData = async (
     page = 1,
     pageSize = 10,
@@ -83,10 +107,6 @@ const AuditLogs = () => {
   const handleSearchChange = (e) => {
     const newFilters = { ...filters, searchTerm: e.target.value };
     setFilters(newFilters);
-    clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => {
-      fetchData(1, pagination.pageSize, newFilters);
-    }, 500);
   };
 
   const onDateRangeChange = (dates) => {
@@ -101,14 +121,15 @@ const AuditLogs = () => {
     fetchData(1, pagination.pageSize, filters);
   };
 
-  const handleReset = () => {
-    const resetState = {
+  const handleResetFilter = () => {
+    const resetFilters = {
       searchTerm: "",
       fromDate: null,
       toDate: null,
     };
-    setFilters(resetState);
-    fetchData(1, pagination.pageSize, resetState);
+    setFilters(resetFilters);
+    setShowDateFilter(false);
+    fetchData(1, pagination.pageSize, resetFilters);
   };
 
   const handleViewDetail = (record) => {
@@ -169,12 +190,9 @@ const AuditLogs = () => {
       key: "actionType",
       width: 200,
       render: (text) => {
-        let color = "default";
-        if (text?.includes("Delete")) color = "red";
-        else if (text?.includes("Create")) color = "green";
-        else if (text?.includes("Update")) color = "blue";
-        else if (text?.includes("Login")) color = "gold";
-        return <Tag color={color}>{text}</Tag>;
+        return (
+          <Tag color={resolveActionColor(text)}>{toVietnameseAction(text)}</Tag>
+        );
       },
     },
     {
@@ -209,46 +227,58 @@ const AuditLogs = () => {
 
   return (
     <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm h-full">
-      <div className="flex flex-col gap-3 mb-4 md:mb-6 bg-gray-50 p-3 md:p-4 rounded-md border border-gray-100">
-        <RangePicker
-          showTime
-          value={[filters.fromDate, filters.toDate]}
-          onChange={onDateRangeChange}
-          format="DD/MM/YYYY HH:mm"
-          className="w-full"
-          size="small"
-        />
+      <h2 className="text-base md:text-lg font-bold mb-4">Nhật ký hoạt động</h2>
 
-        <Input
-          placeholder="Tìm user, hành động..."
-          value={filters.searchTerm}
-          onChange={handleSearchChange}
-          onPressEnter={handleApplyFilter}
-          prefix={<SearchOutlined className="text-gray-400" />}
-          allowClear
-          className="w-full"
-          size="small"
-        />
+      <div className="mb-4 md:mb-6 bg-gray-50 p-3 md:p-4 rounded-md border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          <div className="md:max-w-sm">
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Người thực hiện
+            </label>
+            <Input
+              placeholder="Nhập username..."
+              value={filters.searchTerm}
+              onChange={handleSearchChange}
+              onPressEnter={handleApplyFilter}
+              prefix={<SearchOutlined className="text-gray-400" />}
+              allowClear
+              className="w-full"
+              size="middle"
+            />
 
-        <div className="flex gap-2">
-          <Button
-            type="primary"
-            onClick={handleApplyFilter}
-            icon={<SearchOutlined />}
-            size="small"
-            className="flex-1 sm:flex-none"
-          >
-            <span className="hidden sm:inline">Lọc dữ liệu</span>
-            <span className="sm:hidden">Lọc</span>
-          </Button>
-          <Button
-            onClick={handleReset}
-            icon={<ReloadOutlined />}
-            size="small"
-            className="flex-1 sm:flex-none"
-          >
-            Reset
-          </Button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={() => setShowDateFilter((prev) => !prev)}>
+                {showDateFilter ? "Ẩn chọn ngày" : "Chọn ngày"}
+              </Button>
+              <Button onClick={handleResetFilter}>Đặt lại</Button>
+              <Button
+                type="primary"
+                onClick={handleApplyFilter}
+                icon={<SearchOutlined />}
+              >
+                Áp dụng
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            {showDateFilter && (
+              <>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Ngày bắt đầu - Ngày kết thúc
+                </label>
+                <RangePicker
+                  showTime
+                  value={[filters.fromDate, filters.toDate]}
+                  onChange={onDateRangeChange}
+                  format="DD/MM/YYYY HH:mm"
+                  placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
+                  className="w-full"
+                  size="middle"
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -264,6 +294,7 @@ const AuditLogs = () => {
             pageSize: pagination.pageSize,
             total: pagination.total,
             showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} bản ghi`,
             onChange: (page, pageSize) => fetchData(page, pageSize, filters),
           }}
           scroll={{ x: 800 }}

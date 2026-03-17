@@ -34,7 +34,7 @@ const Sidebar = () => {
       end: true,
     },
     {
-      label: "Quản lý User",
+      label: "Quản lý người dùng",
       path: "/dashboard/users",
       icon: <Users size={20} />,
       allowedRoles: [ROLES.ADMIN],
@@ -52,30 +52,6 @@ const Sidebar = () => {
       allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
     },
     {
-      label: "Upload file",
-      path: "/dashboard/upload",
-      icon: <Building2 size={20} />,
-      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
-    },
-    {
-      label: "Draft Report",
-      path: "/dashboard/draft-report",
-      icon: <Building2 size={20} />,
-      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
-    },
-    {
-      label: "Quản lý Báo cáo",
-      path: "/dashboard/reports",
-      icon: <Building2 size={20} />,
-      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
-    },
-    {
-      label: "Phân tích Báo cáo",
-      path: "/dashboard/analysis-reports",
-      icon: <BarChart3 size={20} />,
-      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
-    },
-    {
       label: "Nhóm Chỉ số",
       path: "/dashboard/metric-groups",
       icon: <FolderTree size={20} />,
@@ -83,8 +59,14 @@ const Sidebar = () => {
     },
     {
       path: "/dashboard/metrics",
-      label: "Metrics",
+      label: "Chỉ số",
       icon: <BarChart3 size={20} />,
+      allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
+    },
+    {
+      label: "Quản lý Báo cáo",
+      path: "/dashboard/reports",
+      icon: <Building2 size={20} />,
       allowedRoles: [ROLES.ADMIN, ROLES.STAFF],
     },
     {
@@ -138,7 +120,7 @@ const Sidebar = () => {
           </span>
         </Link>
 
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-6 px-3 space-y-1">
           {visibleMenu.map((item) => (
             <NavLink
               key={item.path}
@@ -146,9 +128,9 @@ const Sidebar = () => {
               end={item.end}
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${
+                `flex w-full items-center gap-3 px-3 py-3 rounded-lg transition-colors duration-200 font-medium text-sm ${
                   isActive
-                    ? "bg-[#1890ff] text-white shadow-md translate-x-1"
+                    ? "bg-[#1890ff] text-white shadow-md"
                     : "text-gray-400 hover:bg-[#1890ff]/10 hover:text-white"
                 }`
               }

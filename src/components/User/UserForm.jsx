@@ -73,7 +73,7 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
         <Form.Item
           name="username"
           label="Tên đăng nhập"
-          rules={[{ required: true, message: "Vui lòng nhập username" }]}
+          rules={[{ required: true, message: "Vui lòng nhập tên đăng nhập" }]}
         >
           <Input disabled={!!initialData} placeholder="VD: admin123" />
         </Form.Item>
@@ -90,7 +90,7 @@ const UserForm = ({ open, onCancel, onSuccess, initialData }) => {
           name="email"
           label="Email"
           rules={[
-            { required: true, message: "Vui lòng nhập email" },
+            { required: true, message: "Vui lòng nhập địa chỉ email" },
             { type: "email", message: "Email không đúng định dạng" },
           ]}
         >

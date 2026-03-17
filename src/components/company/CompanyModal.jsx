@@ -5,14 +5,22 @@ import industryService from "../../services/industryService";
 const { TextArea } = Input;
 const { Option } = Select;
 
-const CompanyModal = ({ open, editingCompany, loading, onSubmit, onCancel }) => {
+const CompanyModal = ({
+  open,
+  editingCompany,
+  loading,
+  onSubmit,
+  onCancel,
+}) => {
   const [form] = Form.useForm();
   const [industries, setIndustries] = useState([]);
 
   // Lấy danh sách Ngành
   useEffect(() => {
     if (open) {
-      industryService.getAllNoPaging().then(data => setIndustries(data || []));
+      industryService
+        .getAllNoPaging()
+        .then((data) => setIndustries(data || []));
     }
   }, [open]);
 
@@ -20,7 +28,7 @@ const CompanyModal = ({ open, editingCompany, loading, onSubmit, onCancel }) => 
     if (open && editingCompany) {
       form.setFieldsValue({
         ...editingCompany,
-        industryId: editingCompany.industryId // Map ID vào form
+        industryId: editingCompany.industryId, // Map ID vào form
       });
     } else if (open) {
       form.resetFields();
@@ -32,7 +40,7 @@ const CompanyModal = ({ open, editingCompany, loading, onSubmit, onCancel }) => 
       const values = await form.validateFields();
       await onSubmit(values, editingCompany);
       form.resetFields();
-    } catch (error) { }
+    } catch (error) {}
   };
 
   const handleCancel = () => {
@@ -86,12 +94,16 @@ const CompanyModal = ({ open, editingCompany, loading, onSubmit, onCancel }) => 
 
         {/* THAY ĐỔI: Sử dụng Select cho Ngành */}
         <Form.Item
-          label="Ngành (Industry)"
+          label="Ngành"
           name="industryId"
           rules={[{ required: true, message: "Vui lòng chọn ngành" }]}
         >
-          <Select placeholder="Chọn ngành hoạt động" showSearch optionFilterProp="children">
-            {industries.map(ind => (
+          <Select
+            placeholder="Chọn ngành hoạt động"
+            showSearch
+            optionFilterProp="children"
+          >
+            {industries.map((ind) => (
               <Option key={ind.id} value={ind.id}>
                 {ind.code} - {ind.nameVi}
               </Option>

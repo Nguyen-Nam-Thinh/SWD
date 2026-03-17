@@ -1,47 +1,107 @@
 import { Input, Select, Button } from "antd";
-import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 
-const MetricsSearchBar = ({ searchField, setSearchField, searchValue, setSearchValue, onSearch, onReset, onAdd, hasActiveFilters }) => {
+const MetricsSearchBar = ({
+  searchField,
+  setSearchField,
+  searchValue,
+  setSearchValue,
+  groupFilter,
+  setGroupFilter,
+  typeFilter,
+  setTypeFilter,
+  metricGroups,
+  onSearch,
+}) => {
+  const formatVietnameseGroupName = (name) => {
+    if (!name) return "Không có tên";
+    return name
+      .replace(/\s*\((?=[^)]*[A-Za-z])[^)]*\)\s*/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center w-full md:w-auto">
-      <Select
-        value={searchField}
-        onChange={setSearchField}
-        className="w-full sm:w-40"
-        size="small"
-      >
-        <Select.Option value="metricCode">Mã Metric</Select.Option>
-        {/* Đổi thành Tìm theo Tên Tiếng Việt */}
-        <Select.Option value="metricNameVi">Tên Tiếng Việt</Select.Option>
-        <Select.Option value="unit">Đơn Vị</Select.Option>
-      </Select>
+    <div className="w-full rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 md:p-3">
+      <div className="grid grid-cols-1 md:grid-cols-[140px_1fr_200px_170px_auto] gap-2 items-end">
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Tìm theo
+          </label>
+          <Select
+            value={searchField}
+            onChange={setSearchField}
+            className="w-full"
+            size="small"
+          >
+            <Select.Option value="metricCode">Mã</Select.Option>
+            <Select.Option value="metricNameVi">Tên chỉ số</Select.Option>
+          </Select>
+        </div>
 
-      <Input
-        placeholder={
-          searchField === "metricCode" ? "Tìm kiếm theo Mã Metric"
-            : searchField === "metricNameVi" ? "Tìm kiếm theo Tên Tiếng Việt"
-              : "Tìm kiếm theo Đơn Vị"
-        }
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-        onPressEnter={onSearch}
-        className="w-full sm:w-64"
-        size="small"
-        suffix={
-          <SearchOutlined className="cursor-pointer text-gray-400 hover:text-blue-500" onClick={onSearch} />
-        }
-      />
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Từ khóa
+          </label>
+          <Input
+            placeholder={
+              searchField === "metricCode"
+                ? "Nhập mã metric..."
+                : "Nhập tên metric..."
+            }
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onPressEnter={onSearch}
+            size="small"
+            suffix={
+              <SearchOutlined
+                className="cursor-pointer text-gray-400 hover:text-blue-500"
+                onClick={onSearch}
+              />
+            }
+          />
+        </div>
 
-      <div className="flex gap-2">
-        {hasActiveFilters && (
-          <Button onClick={onReset} size="small" className="flex-1 sm:flex-none">
-            Đặt lại
-          </Button>
-        )}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Nhóm
+          </label>
+          <Select
+            value={groupFilter}
+            onChange={setGroupFilter}
+            allowClear
+            className="w-full"
+            size="small"
+            placeholder="Lọc theo nhóm"
+            options={(metricGroups || []).map((group) => ({
+              value: group.id,
+              label: formatVietnameseGroupName(
+                group.groupNameVi || group.nameVi || group.groupName || "",
+              ),
+            }))}
+          />
+        </div>
 
-        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small" className="flex-1 sm:flex-none">
-          <span className="hidden sm:inline">Thêm Metric</span>
-          <span className="sm:hidden">Thêm</span>
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-600 mb-1 md:mb-0.5">
+            Kiểu dữ liệu
+          </label>
+          <Select
+            value={typeFilter}
+            onChange={setTypeFilter}
+            allowClear
+            className="w-full"
+            size="small"
+            placeholder="Lọc theo kiểu"
+            options={[
+              { value: "manual", label: "Nhập tay" },
+              { value: "formula", label: "Công thức" },
+            ]}
+          />
+        </div>
+
+        <Button type="primary" size="small" onClick={onSearch}>
+          Lọc
         </Button>
       </div>
     </div>

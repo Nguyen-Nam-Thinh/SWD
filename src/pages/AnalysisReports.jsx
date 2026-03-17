@@ -17,13 +17,14 @@ import {
   Divider,
 } from "antd";
 import {
-  SyncOutlined,
   EyeOutlined,
   BarChartOutlined,
   SendOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { Eye, TrendingUp } from "lucide-react";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -36,12 +37,14 @@ import companyService from "../services/companyService";
 import metricService from "../services/metricService";
 import analysisService from "../services/analysisService";
 import ResponsiveTable from "../components/ResponsiveTable";
+import ReportStatusTag from "../components/common/ReportStatusTag";
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
 const AnalysisReports = () => {
+  const navigate = useNavigate();
   // --- STATE ---
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState([]);
@@ -59,6 +62,7 @@ const AnalysisReports = () => {
   // Analysis result modal
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [showHistoryScreen, setShowHistoryScreen] = useState(false);
 
   // Analysis history state
   const [analysisHistory, setAnalysisHistory] = useState([]);
@@ -369,7 +373,7 @@ const AnalysisReports = () => {
       render: (t, r) => (
         <div>
           <div className="font-bold text-gray-700">{t}</div>
-          <div className="text-xs text-gray-500">{r.ticker || "N/A"}</div>
+          <div className="text-xs text-gray-500">{r.ticker || "Không có"}</div>
         </div>
       ),
     },
@@ -398,9 +402,7 @@ const AnalysisReports = () => {
       label: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status) => (
-        <Tag color="green">{status === "Approved" ? "Đã duyệt" : status}</Tag>
-      ),
+      render: (status) => <ReportStatusTag status={status} />,
     },
     {
       title: "Hành động",
@@ -436,291 +438,359 @@ const AnalysisReports = () => {
     .filter(Boolean)
     .sort((a, b) => b - a);
 
+  const getHistoryCompany = (item) => {
+    return (
+      item.companyName ||
+      item.company?.companyName ||
+      item.ticker ||
+      item.companyTicker ||
+      "-"
+    );
+  };
+
+  const getHistoryReport = (item) => {
+    if (Array.isArray(item.reportNames) && item.reportNames.length > 0) {
+      return item.reportNames.join(", ");
+    }
+
+    return (
+      item.reportName || item.reportTitle || item.fileName || item.title || "-"
+    );
+  };
+
+  const getHistoryUpdatedAt = (item) => {
+    return item.updatedAt || item.modifiedAt || item.createdAt;
+  };
+
   // --- RENDER GIAO DIỆN ---
   return (
     <div className="p-3 md:p-6 bg-gray-50 min-h-screen">
+      <Button
+        icon={<ArrowLeftOutlined />}
+        type="link"
+        onClick={() => navigate("/dashboard/reports")}
+        className="mb-2 pl-0"
+      >
+        Quay về Quản lý Báo cáo
+      </Button>
+
+      <div className="mb-3">
+        {!showHistoryScreen ? (
+          <Button onClick={() => setShowHistoryScreen(true)}>Lịch sử</Button>
+        ) : (
+          <Button onClick={() => setShowHistoryScreen(false)}>
+            Quay lại Phân tích
+          </Button>
+        )}
+      </div>
+
       {/* Form Phân tích */}
-      <Card bordered={false} className="shadow-sm rounded-lg mb-6">
-        <Title level={4} className="!text-base md:!text-xl mb-4">
-          📊 Phân tích Báo cáo với AI
-        </Title>
-        <Paragraph className="text-gray-600 mb-4">
-          Chọn công ty HOẶC báo cáo, rồi nhập câu hỏi phân tích
-        </Paragraph>
+      {!showHistoryScreen && (
+        <Card bordered={false} className="shadow-sm rounded-lg mb-6">
+          <Title level={4} className="!text-base md:!text-xl mb-4">
+            📊 Phân tích Báo cáo với AI
+          </Title>
+          <Paragraph className="text-gray-600 mb-4">
+            Chọn công ty HOẶC báo cáo, rồi nhập câu hỏi phân tích
+          </Paragraph>
 
-        <Form form={form} layout="vertical" onFinish={handleAnalysisSubmit}>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Công ty (Tùy chọn)"
-                name="companyId"
-                rules={[validateCompanyOrReports]}
-              >
-                <Select
-                  placeholder="Chọn công ty"
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
-                  onChange={handleCompanyChange}
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
+          <Form form={form} layout="vertical" onFinish={handleAnalysisSubmit}>
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Công ty (Tùy chọn)"
+                  name="companyId"
+                  rules={[validateCompanyOrReports]}
                 >
-                  {companies.map((company) => (
-                    <Option key={company.id} value={company.id}>
-                      {company.companyName} ({company.ticker})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
+                  <Select
+                    placeholder="Chọn công ty"
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    onChange={handleCompanyChange}
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  >
+                    {companies.map((company) => (
+                      <Option key={company.id} value={company.id}>
+                        {company.companyName} ({company.ticker})
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Báo cáo (Tùy chọn)"
-                name="reportIds"
-                rules={[validateCompanyOrReports]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Chọn báo cáo"
-                  maxTagCount="responsive"
-                  showSearch
-                  optionFilterProp="children"
-                  onChange={handleReportsChange}
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Báo cáo (Tùy chọn)"
+                  name="reportIds"
+                  rules={[validateCompanyOrReports]}
                 >
-                  {availableReports.map((report) => (
-                    <Option
-                      key={report.reportId || report.id}
-                      value={report.reportId || report.id}
-                    >
-                      {report.companyName || report.ticker} - Năm{" "}
-                      {report.year || report.reportYear} -{" "}
-                      {report.periodType === "Quarterly"
-                        ? `Quý ${report.period || report.reportPeriod}`
-                        : "Cả năm"}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
+                  <Select
+                    mode="multiple"
+                    placeholder="Chọn báo cáo"
+                    maxTagCount="responsive"
+                    showSearch
+                    optionFilterProp="children"
+                    onChange={handleReportsChange}
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  >
+                    {availableReports.map((report) => (
+                      <Option
+                        key={report.reportId || report.id}
+                        value={report.reportId || report.id}
+                      >
+                        {report.companyName || report.ticker} - Năm{" "}
+                        {report.year || report.reportYear} -{" "}
+                        {report.periodType === "Quarterly"
+                          ? `Quý ${report.period || report.reportPeriod}`
+                          : "Cả năm"}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-            <Col xs={24}>
-              <Form.Item label="Chỉ số phân tích (Tùy chọn)" name="metricCodes">
-                <Select
-                  mode="multiple"
-                  placeholder={
-                    reportMetrics.length > 0
-                      ? "Chọn chỉ số cần phân tích"
-                      : "Vui lòng chọn báo cáo trước"
-                  }
-                  showSearch
-                  optionFilterProp="children"
-                  maxTagCount="responsive"
-                  loading={fetchingMetrics}
-                  disabled={reportMetrics.length === 0}
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
+              <Col xs={24}>
+                <Form.Item
+                  label="Chỉ số phân tích (Tùy chọn)"
+                  name="metricCodes"
                 >
-                  {reportMetrics.map((metric) => (
-                    <Option key={metric.metricCode} value={metric.metricCode}>
-                      {metric.metricCode} - {metric.metricName} (
-                      {metric.finalValue
-                        ? metric.finalValue.toLocaleString()
-                        : "N/A"}
-                      )
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
+                  <Select
+                    mode="multiple"
+                    placeholder={
+                      reportMetrics.length > 0
+                        ? "Chọn chỉ số cần phân tích"
+                        : "Vui lòng chọn báo cáo trước"
+                    }
+                    showSearch
+                    optionFilterProp="children"
+                    maxTagCount="responsive"
+                    loading={fetchingMetrics}
+                    disabled={reportMetrics.length === 0}
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  >
+                    {reportMetrics.map((metric) => (
+                      <Option key={metric.metricCode} value={metric.metricCode}>
+                        {metric.metricCode} - {metric.metricName} (
+                        {metric.finalValue
+                          ? metric.finalValue.toLocaleString()
+                          : "Không có"}
+                        )
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-            <Col xs={24}>
-              <Form.Item
-                label="Câu hỏi / Yêu cầu phân tích"
-                name="userPrompt"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập yêu cầu phân tích",
-                  },
-                ]}
+              <Col xs={24}>
+                <Form.Item
+                  label="Câu hỏi / Yêu cầu phân tích"
+                  name="userPrompt"
+                >
+                  <TextArea
+                    rows={4}
+                    placeholder="Ví dụ: So sánh tỷ suất lợi nhuận giữa các quý, phân tích xu hướng tăng trưởng doanh thu..."
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item className="mb-0">
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SendOutlined />}
+                loading={submitting}
+                size="large"
+                className="w-full md:w-auto"
               >
-                <TextArea
-                  rows={4}
-                  placeholder="Ví dụ: So sánh tỷ suất lợi nhuận giữa các quý, phân tích xu hướng tăng trưởng doanh thu..."
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item className="mb-0">
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SendOutlined />}
-              loading={submitting}
-              size="large"
-              className="w-full md:w-auto"
-            >
-              {submitting ? "Đang phân tích..." : "Phân tích ngay"}
-            </Button>
-            <Text type="secondary" className="ml-3 text-xs">
-              ⏱️ Quá trình phân tích có thể mất 1-3 phút
-            </Text>
-          </Form.Item>
-        </Form>
-      </Card>
-
+                {submitting ? "Đang phân tích..." : "Phân tích ngay"}
+              </Button>
+              <Text type="secondary" className="ml-3 text-xs">
+                ⏱️ Quá trình phân tích có thể mất 1-3 phút
+              </Text>
+            </Form.Item>
+          </Form>
+        </Card>
+      )}
 
       {/* Lịch sử Phân tích AI */}
-      <Card bordered={false} className="shadow-sm rounded-lg mt-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
-          <Title
-            level={3}
-            className="!text-lg md:!text-2xl"
-            style={{ margin: 0 }}
-          >
-            📊 Lịch sử Phân tích AI
-          </Title>
-          <Button
-            icon={<SyncOutlined />}
-            onClick={() =>
-              fetchAnalysisHistory(
-                historyPagination.current,
-                historyPagination.pageSize,
-              )
-            }
-            size="small"
-            className="md:!h-8"
-          >
-            <span className="hidden sm:inline">Làm mới</span>
-          </Button>
-        </div>
+      {showHistoryScreen && (
+        <Card bordered={false} className="shadow-sm rounded-lg mt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
+            <Title
+              level={3}
+              className="!text-lg md:!text-2xl"
+              style={{ margin: 0 }}
+            >
+              📊 Lịch sử Phân tích AI
+            </Title>
+          </div>
 
-        {/* Desktop Table */}
-        <div className="hidden md:block">
-          <Table
-            columns={[
-              {
-                title: "Tiêu đề",
-                dataIndex: "title",
-                key: "title",
-                render: (text) => (
-                  <div className="font-medium text-gray-700">{text}</div>
-                ),
-              },
-              {
-                title: "Câu hỏi",
-                dataIndex: "userPrompt",
-                key: "userPrompt",
-                render: (text) => (
-                  <div className="text-sm text-gray-600 italic">"{text}"</div>
-                ),
-              },
-              {
-                title: "Thời gian",
-                dataIndex: "createdAt",
-                key: "createdAt",
-                width: 180,
-                render: (d) => (
-                  <div className="text-sm">
-                    {d ? dayjs(d).format("DD/MM/YYYY HH:mm") : "-"}
-                  </div>
-                ),
-              },
-              {
-                title: "Hành động",
-                key: "action",
-                width: 120,
-                render: (_, record) => (
-                  <Button
-                    type="primary"
-                    icon={<EyeOutlined />}
-                    size="small"
-                    onClick={() => handleViewAnalysisDetail(record.id)}
-                  >
-                    Xem
-                  </Button>
-                ),
-              },
-            ]}
-            dataSource={analysisHistory}
-            rowKey="id"
-            loading={loadingHistory}
-            pagination={{
-              current: historyPagination.current,
-              pageSize: historyPagination.pageSize,
-              total: historyPagination.total,
-              showTotal: (total) => `Tổng ${total} phân tích`,
-              onChange: (page, pageSize) =>
-                fetchAnalysisHistory(page, pageSize),
-            }}
-            className="mt-4"
-          />
-        </div>
-
-        {/* Mobile List */}
-        <div className="md:hidden mt-4">
-          {loadingHistory ? (
-            <div className="text-center py-8">
-              <Spin />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {analysisHistory.map((item) => (
-                <Card
-                  key={item.id}
-                  size="small"
-                  hoverable
-                  className="cursor-pointer"
-                  onClick={() => handleViewAnalysisDetail(item.id)}
-                >
-                  <div className="space-y-2">
+          {/* Desktop Table */}
+          <div className="hidden md:block">
+            <Table
+              columns={[
+                {
+                  title: "STT",
+                  key: "index",
+                  width: 70,
+                  align: "center",
+                  render: (_, __, index) =>
+                    (historyPagination.current - 1) *
+                      historyPagination.pageSize +
+                    index +
+                    1,
+                },
+                {
+                  title: "Công ty",
+                  key: "company",
+                  render: (_, item) => (
                     <div className="font-medium text-gray-700">
-                      {item.title}
+                      {getHistoryCompany(item)}
                     </div>
-                    <div className="text-xs text-gray-500 italic">
-                      "{item.userPrompt}"
+                  ),
+                },
+                {
+                  title: "Báo cáo",
+                  key: "report",
+                  render: (_, item) => (
+                    <div
+                      className="text-sm text-gray-600"
+                      title={getHistoryReport(item)}
+                    >
+                      {getHistoryReport(item)}
                     </div>
-                    <div className="flex justify-between items-center text-xs text-gray-400">
-                      <span>
-                        {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
-                      </span>
-                      <Button
-                        type="link"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewAnalysisDetail(item.id);
-                        }}
-                      >
-                        Xem
-                      </Button>
+                  ),
+                },
+                {
+                  title: "Cập nhật lúc",
+                  key: "updatedAt",
+                  width: 190,
+                  render: (_, item) => (
+                    <div className="text-sm">
+                      {getHistoryUpdatedAt(item)
+                        ? dayjs(getHistoryUpdatedAt(item)).format(
+                            "DD/MM/YYYY HH:mm:ss",
+                          )
+                        : "-"}
                     </div>
+                  ),
+                },
+                {
+                  title: "Hành động",
+                  key: "action",
+                  width: 120,
+                  render: (_, record) => (
+                    <Button
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      size="small"
+                      onClick={() => handleViewAnalysisDetail(record.id)}
+                    >
+                      Xem
+                    </Button>
+                  ),
+                },
+              ]}
+              dataSource={analysisHistory}
+              rowKey="id"
+              loading={loadingHistory}
+              pagination={{
+                current: historyPagination.current,
+                pageSize: historyPagination.pageSize,
+                total: historyPagination.total,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng ${total} phân tích`,
+                onChange: (page, pageSize) =>
+                  fetchAnalysisHistory(page, pageSize),
+              }}
+              className="mt-4"
+            />
+          </div>
+
+          {/* Mobile List */}
+          <div className="md:hidden mt-4">
+            {loadingHistory ? (
+              <div className="text-center py-8">
+                <Spin />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {analysisHistory.map((item, index) => (
+                  <Card
+                    key={item.id}
+                    size="small"
+                    hoverable
+                    className="cursor-pointer"
+                    onClick={() => handleViewAnalysisDetail(item.id)}
+                  >
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-400">
+                        STT:{" "}
+                        {(historyPagination.current - 1) *
+                          historyPagination.pageSize +
+                          index +
+                          1}
+                      </div>
+                      <div className="font-medium text-gray-700">
+                        Công ty: {getHistoryCompany(item)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Báo cáo: {getHistoryReport(item)}
+                      </div>
+                      <div className="flex justify-between items-center text-xs text-gray-400">
+                        <span>
+                          {getHistoryUpdatedAt(item)
+                            ? dayjs(getHistoryUpdatedAt(item)).format(
+                                "DD/MM/YYYY HH:mm:ss",
+                              )
+                            : "-"}
+                        </span>
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewAnalysisDetail(item.id);
+                          }}
+                        >
+                          Xem
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                {analysisHistory.length === 0 && (
+                  <div className="text-center text-gray-400 py-8">
+                    Chưa có phân tích nào
                   </div>
-                </Card>
-              ))}
-              {analysisHistory.length === 0 && (
-                <div className="text-center text-gray-400 py-8">
-                  Chưa có phân tích nào
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </Card>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Modal Kết quả Phân tích */}
       <Modal
         title="📈 Kết quả Phân tích AI"
         open={analysisModalOpen}
         onCancel={() => setAnalysisModalOpen(false)}
+        centered
         footer={[
           <Button
             key="close"
@@ -731,7 +801,7 @@ const AnalysisReports = () => {
           </Button>,
         ]}
         width={1200}
-        bodyStyle={{ maxHeight: "75vh", overflowY: "auto", padding: "24px" }}
+        bodyStyle={{ maxHeight: "65vh", overflowY: "auto", padding: "24px" }}
       >
         {analysisResult && (
           <div className="space-y-4">

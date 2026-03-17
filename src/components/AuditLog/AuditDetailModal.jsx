@@ -5,6 +5,23 @@ import dayjs from "dayjs";
 
 const { Text } = Typography;
 
+const ACTION_LABEL_MAP = {
+  DELETE: "Xóa",
+  CREATE: "Tạo mới",
+  UPDATE: "Cập nhật",
+  LOGIN: "Đăng nhập",
+  DELETE_REPORT: "Xóa báo cáo",
+  DELETE_USER: "Xóa người dùng",
+  DELETE_COMPANY: "Xóa công ty",
+  DELETE_METRIC: "Xóa chỉ số",
+};
+
+const toVietnameseAction = (actionType = "") => {
+  if (!actionType) return "Không có";
+  const normalized = actionType.trim().toUpperCase();
+  return ACTION_LABEL_MAP[normalized] || actionType;
+};
+
 const AuditDetailModal = ({ visible, onClose, record }) => {
   const [diffData, setDiffData] = useState([]);
 
@@ -85,7 +102,7 @@ const AuditDetailModal = ({ visible, onClose, record }) => {
 
   return (
     <Modal
-      title={`Chi tiết thay đổi - ${record?.actionType || "N/A"}`}
+      title={`Chi tiết thay đổi - ${toVietnameseAction(record?.actionType)}`}
       open={visible}
       onCancel={onClose}
       footer={[
