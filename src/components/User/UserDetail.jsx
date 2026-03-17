@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Drawer, Descriptions, Tag, Spin, message } from "antd";
 import userService from "../../services/userService";
 import dayjs from "dayjs";
+import ReportStatusTag from "../common/ReportStatusTag";
 
 const UserDetail = ({ open, onCancel, userId }) => {
   const [user, setUser] = useState(null);
@@ -62,9 +63,10 @@ const UserDetail = ({ open, onCancel, userId }) => {
           </Descriptions.Item>
 
           <Descriptions.Item label="Trạng thái">
-            <Tag color={user.isActive ? "success" : "error"}>
-              {user.isActive ? "Đang hoạt động" : "Đã khóa"}
-            </Tag>
+            <ReportStatusTag
+              status={user.isActive ? "Active" : "Inactive"}
+              type="user"
+            />
           </Descriptions.Item>
 
           <Descriptions.Item label="Ngày tạo">

@@ -1,29 +1,23 @@
 import { useState, useEffect } from "react";
-import {
-  Table,
-  Button,
-  Card,
-  Tag,
-  Space,
-  message,
-  Popconfirm,
-  Modal,
-} from "antd";
+import { Table, Button, Card, Space, message, Popconfirm, Modal } from "antd";
 import {
   DeleteOutlined,
   AuditOutlined,
-  FileTextOutlined,
   InfoCircleOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { Eye, Trash2, Info } from "lucide-react";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 import reportService from "../services/reportService";
 import ResponsiveTable from "../components/ResponsiveTable";
+import ReportStatusTag from "../components/common/ReportStatusTag";
 
 // Import đúng đường dẫn component con
 import SplitComparisonView from "../components/DraftReport/SplitComparisonView";
 
 const DraftReport = () => {
+  const navigate = useNavigate();
   const [selectedReportId, setSelectedReportId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
@@ -115,6 +109,31 @@ const DraftReport = () => {
     }
   };
 
+  const handleOpenOrDownloadFile = async (record) => {
+    try {
+      message.loading({ content: "Đang mở tệp...", key: "open-file" });
+      const blob = await reportService.getReportFile(record.id);
+      const fileUrl = URL.createObjectURL(blob);
+
+      const opened = window.open(fileUrl, "_blank", "noopener,noreferrer");
+
+      if (!opened) {
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.download = record.fileName || `bao-cao-${record.id}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      setTimeout(() => URL.revokeObjectURL(fileUrl), 30000);
+      message.success({ content: "Đã xử lý tệp", key: "open-file" });
+    } catch (error) {
+      console.error("Open file error:", error);
+      message.error({ content: "Không thể mở tệp báo cáo", key: "open-file" });
+    }
+  };
+
   // --- LOGIC CHUYỂN MÀN HÌNH ---
 
   // Nếu có ID -> Hiển thị màn hình 2 cột (Split View)
@@ -132,34 +151,48 @@ const DraftReport = () => {
 
   const columns = [
     {
+      title: "STT",
+      key: "index",
+      label: "STT",
+      width: 70,
+      align: "center",
+      render: (_, __, index) =>
+        (pagination.current - 1) * pagination.pageSize + index + 1,
+    },
+    {
       title: "Tên báo cáo",
       dataIndex: "fileName",
       key: "fileName",
       label: "Tên báo cáo",
-      render: (text) => (
-        <span
-          className="font-medium text-blue-900 block truncate max-w-xs"
+      render: (text, record) => (
+        <Button
+          type="link"
+          className="!px-0 font-medium block truncate max-w-xs"
           title={text}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenOrDownloadFile(record);
+          }}
         >
           {text}
-        </span>
+        </Button>
       ),
     },
     {
-      title: "Công Ty",
-      dataIndex: "companyName",
-      key: "companyName",
+      title: "Công ty",
+      dataIndex: "company",
+      key: "company",
       label: "Công ty",
-      render: (text) => <Tag color="blue">{text || "N/A"}</Tag>,
-    },
-    {
-      title: "Kỳ",
-      key: "period",
-      label: "Kỳ",
       render: (_, r) => (
-        <span>
-          {r.reportYear} {r.reportPeriod ? `- Quý ${r.reportPeriod}` : ""}
-        </span>
+        <div>
+          <div className="font-bold text-gray-700">
+            {r.companyName || "Không có"}
+          </div>
+          <div className="text-xs text-gray-500">
+            Năm {r.reportYear}
+            {r.reportPeriod ? ` - Quý ${r.reportPeriod}` : ""}
+          </div>
+        </div>
       ),
     },
     {
@@ -174,11 +207,7 @@ const DraftReport = () => {
       dataIndex: "status",
       key: "status",
       label: "Trạng thái",
-      render: (status) => (
-        <Tag color={status === "Rejected" ? "red" : "orange"}>
-          {status === "Rejected" ? "Từ chối" : "Nháp"}
-        </Tag>
-      ),
+      render: (status) => <ReportStatusTag status={status} />,
     },
     {
       title: "Hành động",
@@ -283,25 +312,25 @@ const DraftReport = () => {
   const mobileColumns = [...columns.slice(0, -1), mobileActionsColumn];
 
   return (
-    <Card
-      title={
-        <span className="text-sm md:text-base">Danh sách Báo cáo Nháp</span>
-      }
-      variant="borderless"
-      className="shadow-sm h-full"
-      extra={
-        <Button
-          onClick={fetchDrafts}
-          icon={<FileTextOutlined />}
-          size="small"
-          className="md:size-default"
-        >
-          <span className="hidden md:inline">Làm mới</span>
-        </Button>
-      }
-    >
-      <style>
-        {`
+    <>
+      <Button
+        icon={<ArrowLeftOutlined />}
+        type="link"
+        onClick={() => navigate("/dashboard/reports")}
+        className="mb-2 pl-0"
+      >
+        Quay về Quản lý Báo cáo
+      </Button>
+
+      <Card
+        title={
+          <span className="text-sm md:text-base">Danh sách Báo cáo Nháp</span>
+        }
+        variant="borderless"
+        className="shadow-sm h-full"
+      >
+        <style>
+          {`
           .rejected-row {
             background-color: #fef2f2 !important;
           }
@@ -309,54 +338,61 @@ const DraftReport = () => {
             background-color: #fee2e2 !important;
           }
         `}
-      </style>
+        </style>
 
-      {/* Desktop Table - Ẩn trên mobile */}
-      <div className="hidden md:block">
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          pagination={{
-            ...pagination,
-            onChange: (page) =>
-              setPagination((prev) => ({ ...prev, current: page })),
-          }}
-          rowClassName={(record) =>
-            record.status === "Rejected" ? "rejected-row" : ""
-          }
-          expandable={{
-            expandedRowKeys: expandedRowKeys,
-            onExpand: (expanded, record) => {
-              setExpandedRowKeys(expanded ? [record.id] : []);
-            },
-            expandedRowRender: (record) => (
-              <div className="bg-red-50 p-4 border-l-4 border-red-500">
-                <p className="font-semibold text-red-800 mb-2">
-                  Lý do từ chối:
-                </p>
-                <p className="text-gray-700">{record.rejectionReason}</p>
-              </div>
-            ),
-            rowExpandable: (record) =>
-              record.status === "Rejected" && !!record.rejectionReason,
-            expandIcon: () => null,
-          }}
-        />
-      </div>
+        {/* Desktop Table - Ẩn trên mobile */}
+        <div className="hidden md:block">
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            loading={loading}
+            pagination={{
+              ...pagination,
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} báo cáo`,
+              onChange: (page, pageSize) =>
+                setPagination((prev) => ({
+                  ...prev,
+                  current: page,
+                  pageSize,
+                })),
+            }}
+            rowClassName={(record) =>
+              record.status === "Rejected" ? "rejected-row" : ""
+            }
+            expandable={{
+              expandedRowKeys: expandedRowKeys,
+              onExpand: (expanded, record) => {
+                setExpandedRowKeys(expanded ? [record.id] : []);
+              },
+              expandedRowRender: (record) => (
+                <div className="bg-red-50 p-4 border-l-4 border-red-500">
+                  <p className="font-semibold text-red-800 mb-2">
+                    Lý do từ chối:
+                  </p>
+                  <p className="text-gray-700">{record.rejectionReason}</p>
+                </div>
+              ),
+              rowExpandable: (record) =>
+                record.status === "Rejected" && !!record.rejectionReason,
+              expandIcon: () => null,
+            }}
+          />
+        </div>
 
-      {/* Mobile/Tablet View - Chỉ hiện trên mobile */}
-      <div className="md:hidden">
-        <ResponsiveTable
-          columns={mobileColumns}
-          data={data}
-          itemsPerPage={pagination.pageSize}
-          searchable={true}
-          searchPlaceholder="Tìm kiếm báo cáo..."
-        />
-      </div>
-    </Card>
+        {/* Mobile/Tablet View - Chỉ hiện trên mobile */}
+        <div className="md:hidden">
+          <ResponsiveTable
+            columns={mobileColumns}
+            data={data}
+            itemsPerPage={pagination.pageSize}
+            searchable={true}
+            searchPlaceholder="Tìm kiếm báo cáo..."
+          />
+        </div>
+      </Card>
+    </>
   );
 };
 

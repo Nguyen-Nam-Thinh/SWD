@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Button, message, Spin, Tag } from "antd";
+import { Button, message, Spin, Modal, Input, Space } from "antd";
 import { ArrowLeftOutlined, FilePdfOutlined } from "@ant-design/icons";
 
 // Import các component cũ
 import DocumentViewer from "../DraftReport/DocumentViewer";
 import MetricTable from "../DraftReport/MetricTable";
 import reportService from "../../services/reportService";
+import ReportStatusTag from "../common/ReportStatusTag";
+import authService from "../../services/authService";
 
 const ReportApprovalView = ({ reportId, onBack }) => {
+  const user = authService.getUserData();
+  const canApprove = user?.role === "Admin";
+
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [reportInfo, setReportInfo] = useState(null);
   const [details, setDetails] = useState([]);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   // State cho highlight metric trong PDF
   const [activeMetadata, setActiveMetadata] = useState(null);
@@ -62,6 +69,39 @@ const ReportApprovalView = ({ reportId, onBack }) => {
       setProcessing(false);
     }
   };
+
+  const handleReject = async () => {
+    if (!canApprove) {
+      message.error("Bạn không có quyền từ chối báo cáo");
+      return;
+    }
+
+    if (!rejectReason.trim()) {
+      message.warning("Vui lòng nhập lý do từ chối");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await reportService.updateReportStatus(
+        reportId,
+        "REJECTED",
+        rejectReason,
+      );
+      message.success("Đã từ chối báo cáo");
+      setRejectOpen(false);
+      setRejectReason("");
+      onBack();
+    } catch (error) {
+      console.error("Reject error:", error);
+      message.error("Lỗi khi từ chối báo cáo");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const isPendingStatus = (status) =>
+    ["PendingApproval", "PENDINGAPPROVAL", "PENDING_APPROVAL"].includes(status);
   // Xử lý "Đã xem xét" - Cập nhật lại dữ liệu details
   const handleReview = async () => {
     if (details.length === 0) {
@@ -109,40 +149,36 @@ const ReportApprovalView = ({ reportId, onBack }) => {
           </Button>
           <div className="hidden md:block h-8 w-px bg-gray-300"></div>
           <h2 className="text-sm md:text-lg font-semibold">
-            Duyệt báo cáo #{reportId}
+            {reportInfo?.companyName
+              ? `Chi tiết báo cáo - ${reportInfo.companyName}`
+              : "Chi tiết báo cáo"}
           </h2>
-          {reportInfo?.status && (
-            <Tag
-              color={
-                reportInfo.status === "Approved"
-                  ? "green"
-                  : reportInfo.status === "Rejected"
-                    ? "red"
-                    : "orange"
-              }
-            >
-              {reportInfo.status === "PendingApproval"
-                ? "Chờ duyệt"
-                : reportInfo.status === "Approved"
-                  ? "Đã duyệt"
-                  : reportInfo.status === "Rejected"
-                    ? "Từ chối"
-                    : reportInfo.status}
-            </Tag>
-          )}
+          {reportInfo?.status && <ReportStatusTag status={reportInfo.status} />}
         </div>
 
-        {/* Nút thao tác (Chỉ hiện nếu status là PendingApproval) */}
-        {reportInfo?.status === "PendingApproval" && (
-          <Button
-            type="primary"
-            onClick={handleReview}
-            loading={processing}
-            size="small"
-          >
-            <span className="hidden sm:inline">Đã xem xét</span>
-            <span className="sm:hidden">Xem xét</span>
-          </Button>
+        {/* Nút thao tác */}
+        {canApprove && isPendingStatus(reportInfo?.status) && (
+          <Space>
+            <Button onClick={handleReview} loading={processing} size="small">
+              Đã xem xét
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleApprove}
+              loading={processing}
+              size="small"
+            >
+              Duyệt
+            </Button>
+            <Button
+              danger
+              onClick={() => setRejectOpen(true)}
+              loading={processing}
+              size="small"
+            >
+              Từ chối
+            </Button>
+          </Space>
         )}
       </div>
 
@@ -173,6 +209,24 @@ const ReportApprovalView = ({ reportId, onBack }) => {
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Từ chối báo cáo"
+        open={rejectOpen}
+        onCancel={() => setRejectOpen(false)}
+        onOk={handleReject}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true, loading: processing }}
+      >
+        <p className="mb-2">Lý do từ chối</p>
+        <Input.TextArea
+          rows={4}
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder="Nhập lý do từ chối..."
+        />
+      </Modal>
     </div>
   );
 };

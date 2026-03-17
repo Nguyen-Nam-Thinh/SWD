@@ -1,61 +1,102 @@
-import React, { useState } from "react";
-import { Table, Button, Tag, Space, Tooltip, Switch } from "antd";
-import { EditOutlined, DeleteOutlined, CalculatorOutlined } from "@ant-design/icons";
+import React from "react";
+import { Table, Button, Tag, Space, Tooltip } from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  CalculatorOutlined,
+} from "@ant-design/icons";
 
-const MetricsTable = ({ metrics, loading, pagination, onTableChange, onEdit, onDelete }) => {
-  // State để quản lý ngôn ngữ hiển thị: false = Tiếng Việt, true = Tiếng Anh
-  const [isEnglish, setIsEnglish] = useState(false);
+const MetricsTable = ({
+  metrics,
+  metricGroups,
+  loading,
+  pagination,
+  onTableChange,
+  onEdit,
+  onDelete,
+}) => {
+  const groupNameMap = new Map(
+    (metricGroups || []).map((group) => [
+      String(group.id),
+      group.groupNameVi || group.nameVi || group.groupName || "-",
+    ]),
+  );
+
+  const formatVietnameseGroupName = (name) => {
+    if (!name) return "-";
+    // Bỏ phần trong ngoặc nếu chứa ký tự tiếng Anh, ví dụ: (Income Statement)
+    return name
+      .replace(/\s*\((?=[^)]*[A-Za-z])[^)]*\)\s*/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  };
 
   const columns = [
     {
-      // CHỈNH SỬA 1: Bỏ ép căn giữa, để tiêu đề tự nhiên bên trái khớp với Tag. Set width vừa đủ.
-      title: "Mã Metric",
-      dataIndex: "metricCode",
-      key: "metricCode",
-      width: 130, // Rộng vừa đủ
-      render: (text) => <Tag color="blue" className="font-mono font-bold">{text}</Tag>,
+      title: "STT",
+      key: "index",
+      width: 70,
+      align: "center",
+      render: (_, __, index) =>
+        ((pagination?.current || 1) - 1) * (pagination?.pageSize || 10) +
+        index +
+        1,
     },
     {
-      // Giữ nguyên
-      title: (
-        <div className="flex items-center justify-center gap-2">
-          <span>Tên Metric</span>
-          <Switch
-            checkedChildren="EN"
-            unCheckedChildren="VN"
-            checked={isEnglish}
-            onChange={(checked) => setIsEnglish(checked)}
-            size="small"
-            className="bg-gray-300"
-          />
-        </div>
+      title: "Mã chỉ số",
+      dataIndex: "metricCode",
+      key: "metricCode",
+      width: 100,
+      render: (text) => (
+        <span className="text-sm text-gray-700">{text || "-"}</span>
       ),
+    },
+    {
+      title: "Tên chỉ số",
       key: "metricName",
+      width: 360,
       render: (_, record) => {
-        const nameVi = record.metricNameVi || record.metricName || "(Chưa có tên VN)";
-        const nameEn = record.metricNameEn || "(Chưa có tên EN)";
+        const name = record.metricNameVi || record.metricName || "-";
 
         return (
-          <div>
-            <div className="font-semibold text-gray-800">
-              {isEnglish ? nameEn : nameVi}
-            </div>
-            <div className="text-xs text-gray-400 mt-0.5">
-              {isEnglish ? nameVi : nameEn}
-            </div>
+          <div
+            className="font-semibold text-gray-800 leading-5"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+            title={name}
+          >
+            {name}
           </div>
         );
       },
     },
     {
-      // Giữ nguyên: Chỉ căn giữa tiêu đề, nội dung căn trái, đẩy các cột sau ra xa
       title: <div className="text-center">Nhóm</div>,
       key: "groupName",
-      width: 300,
+      width: 170,
       render: (_, record) => {
-        const name = record.group?.groupName || record.groupName || record.group || "";
-        return name ? <Tag>{name}</Tag> : "-";
-      }
+        const groupId =
+          record.groupId || record.group?.id || record.metricGroupId;
+        const nameFromMap = groupId ? groupNameMap.get(String(groupId)) : null;
+        const name =
+          nameFromMap ||
+          record.group?.groupNameVi ||
+          record.groupNameVi ||
+          record.group?.groupName ||
+          record.groupName ||
+          record.group?.nameVi ||
+          "";
+        const displayName = formatVietnameseGroupName(name);
+        return displayName && displayName !== "-" ? (
+          <Tag>{displayName}</Tag>
+        ) : (
+          "-"
+        );
+      },
     },
     {
       // CHỈNH SỬA 2: Dùng align: 'center' để căn giữa cả tiêu đề VÀ nội dung (Tag)
@@ -63,8 +104,8 @@ const MetricsTable = ({ metrics, loading, pagination, onTableChange, onEdit, onD
       dataIndex: "unit",
       key: "unit",
       width: 150,
-      align: 'center',
-      render: (text) => text ? <Tag color="green">{text}</Tag> : "-",
+      align: "center",
+      render: (text) => (text ? <Tag color="green">{text}</Tag> : "-"),
     },
     {
       // CHỈNH SỬA 3: Bỏ ép căn giữa, để tiêu đề tự nhiên bên trái khớp với Tag. Set width vừa đủ.
@@ -75,15 +116,16 @@ const MetricsTable = ({ metrics, loading, pagination, onTableChange, onEdit, onD
         if (record.isAutoCalculated) {
           return (
             <Tooltip title={record.formula}>
-              <Tag icon={<CalculatorOutlined />} color="purple">Công thức</Tag>
+              <Tag icon={<CalculatorOutlined />} color="purple">
+                Công thức
+              </Tag>
             </Tooltip>
           );
         }
         return <Tag color="green">Nhập tay</Tag>;
-      }
+      },
     },
     {
-      // Giữ nguyên: Chỉ căn giữa tiêu đề
       title: <div className="text-center">Mô Tả</div>,
       dataIndex: "description",
       key: "description",
@@ -95,7 +137,7 @@ const MetricsTable = ({ metrics, loading, pagination, onTableChange, onEdit, onD
       title: "Hành động",
       key: "action",
       width: 150,
-      align: 'center',
+      align: "center",
       render: (_, record) => (
         <Space>
           <Button
@@ -121,7 +163,11 @@ const MetricsTable = ({ metrics, loading, pagination, onTableChange, onEdit, onD
       dataSource={metrics}
       rowKey="id"
       loading={loading}
-      pagination={pagination}
+      pagination={{
+        ...pagination,
+        showSizeChanger: true,
+        showTotal: (total) => `Tổng ${total} chỉ số`,
+      }}
       onChange={onTableChange}
     />
   );

@@ -1,11 +1,18 @@
-import { Modal, Form, Input, Switch, Select, InputNumber } from "antd";
+import { Modal, Form, Input, Switch, Select } from "antd";
 import { useEffect, useState } from "react";
 import metricGroupService from "../../services/metricGroupService";
 
 const { TextArea } = Input;
 const { Option } = Select;
 
-const MetricsModal = ({ open, editingMetric, formRef, loading, onSubmit, onCancel }) => {
+const MetricsModal = ({
+  open,
+  editingMetric,
+  formRef,
+  loading,
+  onSubmit,
+  onCancel,
+}) => {
   const [form] = Form.useForm();
   const [isAuto, setIsAuto] = useState(false);
   const [groups, setGroups] = useState([]);
@@ -42,7 +49,7 @@ const MetricsModal = ({ open, editingMetric, formRef, loading, onSubmit, onCance
     } else if (!open) {
       form.resetFields();
       setIsAuto(false);
-      form.setFieldsValue({ isAutoCalculated: false, displayOrder: 0 });
+      form.setFieldsValue({ isAutoCalculated: false });
     }
   }, [open, editingMetric, form]);
 
@@ -69,13 +76,12 @@ const MetricsModal = ({ open, editingMetric, formRef, loading, onSubmit, onCance
             </Form.Item>
           )}
 
-          <Form.Item
-            label="Nhóm chỉ số (Group)"
-            name="groupId"
-          >
+          <Form.Item label="Nhóm chỉ số (Group)" name="groupId">
             <Select placeholder="Chọn nhóm chỉ số" allowClear>
-              {groups.map(g => (
-                <Option key={g.id} value={g.id}>{g.groupName}</Option>
+              {groups.map((g) => (
+                <Option key={g.id} value={g.id}>
+                  {g.groupName}
+                </Option>
               ))}
             </Select>
           </Form.Item>
@@ -83,30 +89,19 @@ const MetricsModal = ({ open, editingMetric, formRef, loading, onSubmit, onCance
           <Form.Item
             label="Tên Tiếng Việt"
             name="metricNameVi"
-            rules={[{ required: true, message: "Vui lòng nhập tên tiếng Việt" }]}
+            rules={[
+              { required: true, message: "Vui lòng nhập tên tiếng Việt" },
+            ]}
           >
             <Input placeholder="VD: Lợi nhuận sau thuế" />
           </Form.Item>
 
-          <Form.Item
-            label="Tên Tiếng Anh"
-            name="metricNameEn"
-          >
+          <Form.Item label="Tên Tiếng Anh" name="metricNameEn">
             <Input placeholder="VD: Net Profit After Tax" />
           </Form.Item>
 
-          <Form.Item
-            label="Đơn Vị (Unit)"
-            name="unit"
-          >
+          <Form.Item label="Đơn Vị (Unit)" name="unit">
             <Input placeholder="VD: %, VND, lần" />
-          </Form.Item>
-
-          <Form.Item
-            label="Thứ tự hiển thị"
-            name="displayOrder"
-          >
-            <InputNumber className="w-full" min={0} />
           </Form.Item>
         </div>
 
@@ -133,7 +128,9 @@ const MetricsModal = ({ open, editingMetric, formRef, loading, onSubmit, onCance
               <Form.Item
                 label="Công thức tính (Formula)"
                 name="formula"
-                rules={[{ required: true, message: "Vui lòng nhập công thức tính" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập công thức tính" },
+                ]}
                 className="mt-3"
               >
                 <TextArea
@@ -153,7 +150,6 @@ const MetricsModal = ({ open, editingMetric, formRef, loading, onSubmit, onCance
             </>
           )}
         </div>
-
       </Form>
     </Modal>
   );

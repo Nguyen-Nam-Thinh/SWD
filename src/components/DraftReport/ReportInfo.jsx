@@ -1,5 +1,6 @@
 // src/pages/ReportDetail/components/ReportInfo.jsx
-import { Descriptions, Tag, Card } from "antd";
+import { Descriptions, Card } from "antd";
+import ReportStatusTag from "../common/ReportStatusTag";
 
 const ReportInfo = ({ info, loading }) => {
   if (!info) return null;
@@ -23,9 +24,7 @@ const ReportInfo = ({ info, loading }) => {
           </a>
         </Descriptions.Item>
         <Descriptions.Item label="Trạng thái">
-          <Tag color={info.status === "Draft" ? "orange" : "green"}>
-            {info.status?.toUpperCase()}
-          </Tag>
+          <ReportStatusTag status={info.status} />
         </Descriptions.Item>
       </Descriptions>
     </Card>
