@@ -8,8 +8,6 @@ import {
   message,
   Modal,
   Input,
-  Card,
-  Typography,
   Select,
   DatePicker,
   Form,
@@ -17,6 +15,10 @@ import {
   InputNumber,
   Row,
   Col,
+  Popover,
+  Badge,
+  Tag,
+  Divider,
 } from "antd";
 import {
   EyeOutlined,
@@ -28,6 +30,7 @@ import {
   ReloadOutlined,
   InboxOutlined,
   FileAddOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -38,10 +41,16 @@ import ResponsiveTable from "../components/ResponsiveTable";
 import ReportApprovalView from "../components/Approval/ReportApprovalView";
 import ReportStatusTag from "../components/common/ReportStatusTag";
 
-const { Title } = Typography;
 const { RangePicker } = DatePicker;
 const { Dragger } = Upload;
 const { Option } = Select;
+
+const STATUS_LABEL_MAP = {
+  PendingApproval: "Chờ duyệt",
+  Approved: "Đã duyệt",
+  Rejected: "Từ chối",
+  Draft: "Nháp",
+};
 
 const ReportManager = () => {
   const navigate = useNavigate();
@@ -57,23 +66,37 @@ const ReportManager = () => {
     total: 0,
   });
 
+  // Search state
   const [companyKeyword, setCompanyKeyword] = useState("");
+
+  // Filter states (applied)
   const [statusFilter, setStatusFilter] = useState(undefined);
   const [dateRange, setDateRange] = useState(null);
+
+  // Temp filter states (in popup)
+  const [tempStatusFilter, setTempStatusFilter] = useState(undefined);
+  const [tempDateRange, setTempDateRange] = useState(null);
+
+  // Popover state
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [companies, setCompanies] = useState([]);
 
-  const currentFilters = useMemo(
-    () => ({ companyKeyword, statusFilter, dateRange }),
-    [companyKeyword, statusFilter, dateRange],
-  );
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter) count++;
+    if (dateRange?.[0] && dateRange?.[1]) count++;
+    return count;
+  }, [statusFilter, dateRange]);
 
   const fetchReports = async (
     page = 1,
     pageSize = 10,
-    filters = currentFilters,
+    overrideStatus = "__USE_STATE__",
+    overrideDateRange = "__USE_STATE__",
   ) => {
     setLoading(true);
     try {
@@ -82,21 +105,24 @@ const ReportManager = () => {
         PageSize: pageSize,
       };
 
-      if (filters.companyKeyword?.trim()) {
-        params.CompanyName = filters.companyKeyword.trim();
+      if (companyKeyword?.trim()) {
+        params.CompanyName = companyKeyword.trim();
       }
 
-      if (filters.statusFilter) {
-        params.Status = filters.statusFilter;
+      const status =
+        overrideStatus !== "__USE_STATE__" ? overrideStatus : statusFilter;
+      const dates =
+        overrideDateRange !== "__USE_STATE__" ? overrideDateRange : dateRange;
+
+      if (status) {
+        params.Status = status;
       }
 
-      if (filters.dateRange?.[0] && filters.dateRange?.[1]) {
-        params.FromDate = filters.dateRange[0]
+      if (dates?.[0] && dates?.[1]) {
+        params.FromDate = dates[0]
           .startOf("day")
           .format("YYYY-MM-DDTHH:mm:ss");
-        params.ToDate = filters.dateRange[1]
-          .endOf("day")
-          .format("YYYY-MM-DDTHH:mm:ss");
+        params.ToDate = dates[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
       }
 
       const response = await reportService.getReports(params);
@@ -129,34 +155,42 @@ const ReportManager = () => {
   };
 
   useEffect(() => {
-    fetchReports(1, 10, currentFilters);
+    fetchReports(1, 10);
   }, []);
 
-  const handleApplyFilters = () => {
-    fetchReports(1, pagination.pageSize, currentFilters);
+  // Search handler
+  const handleSearch = () => {
+    fetchReports(1, pagination.pageSize);
   };
 
-  const handleResetFilters = () => {
-    setCompanyKeyword("");
-    setStatusFilter(undefined);
-    setDateRange(null);
-    const resetFilters = {
-      companyKeyword: "",
-      statusFilter: undefined,
-      dateRange: null,
-    };
-    fetchReports(1, pagination.pageSize, resetFilters);
+  // Filter popup handlers
+  const handleOpenFilterPopover = () => {
+    setTempStatusFilter(statusFilter);
+    setTempDateRange(dateRange);
+    setFilterPopoverOpen(true);
+  };
+
+  const handleApplyPopoverFilters = () => {
+    setStatusFilter(tempStatusFilter);
+    setDateRange(tempDateRange);
+    setFilterPopoverOpen(false);
+    fetchReports(1, pagination.pageSize, tempStatusFilter, tempDateRange);
+  };
+
+  const handleResetPopoverFilters = () => {
+    setTempStatusFilter(undefined);
+    setTempDateRange(null);
   };
 
   const handleTableChange = (newPagination) => {
-    fetchReports(newPagination.current, newPagination.pageSize, currentFilters);
+    fetchReports(newPagination.current, newPagination.pageSize);
   };
 
   const handleDelete = async (id, companyName) => {
     try {
       await reportService.deleteReport(id);
       message.success(`Đã xóa báo cáo ${companyName}`);
-      fetchReports(pagination.current, pagination.pageSize, currentFilters);
+      fetchReports(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error("Delete error:", error);
       message.error("Lỗi khi xóa báo cáo");
@@ -188,7 +222,7 @@ const ReportManager = () => {
       await reportService.uploadReport(formData);
       message.success("Tải lên báo cáo thành công");
       setUploadOpen(false);
-      fetchReports(1, pagination.pageSize, currentFilters);
+      fetchReports(1, pagination.pageSize);
     } catch (error) {
       if (!error?.errorFields) {
         message.error(
@@ -225,6 +259,74 @@ const ReportManager = () => {
             Xóa
           </Button>
         </Popconfirm>
+      </div>
+    </div>
+  );
+
+  // Filter popover content
+  const filterPopoverContent = (
+    <div style={{ width: 340 }}>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Trạng thái
+        </label>
+        <Select
+          value={tempStatusFilter}
+          onChange={setTempStatusFilter}
+          className="w-full"
+          allowClear
+          placeholder="Chọn trạng thái"
+          options={[
+            { value: "PendingApproval", label: "Chờ duyệt" },
+            { value: "Approved", label: "Đã duyệt" },
+            { value: "Rejected", label: "Từ chối" },
+            { value: "Draft", label: "Nháp" },
+          ]}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Ngày tạo
+        </label>
+        <RangePicker
+          value={tempDateRange}
+          onChange={setTempDateRange}
+          format="DD/MM/YYYY"
+          style={{ width: "100%" }}
+          placeholder={["Từ ngày", "Đến ngày"]}
+        />
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Button icon={<ReloadOutlined />} onClick={handleResetPopoverFilters}>
+          Đặt lại
+        </Button>
+        <Button
+          type="primary"
+          icon={<FilterOutlined />}
+          onClick={handleApplyPopoverFilters}
+        >
+          Áp dụng
+        </Button>
       </div>
     </div>
   );
@@ -298,23 +400,18 @@ const ReportManager = () => {
         reportId={selectedReportId}
         onBack={() => {
           setSelectedReportId(null);
-          fetchReports(pagination.current, pagination.pageSize, currentFilters);
+          fetchReports(pagination.current, pagination.pageSize);
         }}
       />
     );
   }
 
   return (
-    <div className="p-3 md:p-6 bg-gray-50 min-h-screen">
-      <Card bordered={false} className="shadow-sm rounded-lg">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
-          <Title
-            level={3}
-            className="!text-lg md:!text-2xl"
-            style={{ margin: 0 }}
-          >
+    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3">
+          <h2 className="text-base md:text-lg font-bold" style={{ margin: 0 }}>
             Quản lý Báo cáo
-          </Title>
+          </h2>
 
           <Space wrap>
             <Button
@@ -337,69 +434,91 @@ const ReportManager = () => {
               Phân tích
             </Button>
           </Space>
-        </div>
+      </div>
 
-        <div className="mb-4 p-3 md:p-4 bg-gray-50 border border-gray-100 rounded-md">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_320px_auto] gap-3 items-end">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Tìm kiếm theo công ty
-              </label>
-              <Input
-                placeholder="Nhập tên công ty..."
-                value={companyKeyword}
-                onChange={(e) => setCompanyKeyword(e.target.value)}
-                onPressEnter={handleApplyFilters}
-                prefix={<SearchOutlined className="text-gray-400" />}
-                allowClear
+        {/* Search bar + Filter button */}
+        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Tìm kiếm theo tên công ty..."
+            value={companyKeyword}
+            onChange={(e) => setCompanyKeyword(e.target.value)}
+            onPressEnter={handleSearch}
+            prefix={
+              <SearchOutlined
+                className="text-gray-400 cursor-pointer hover:text-blue-500"
+                onClick={handleSearch}
               />
-            </div>
+            }
+            allowClear
+            style={{ maxWidth: 400 }}
+            size="middle"
+          />
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Trạng thái
-              </label>
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                className="w-full"
-                allowClear
-                placeholder="Chọn trạng thái"
-                options={[
-                  { value: "PendingApproval", label: "Chờ duyệt" },
-                  { value: "Approved", label: "Đã duyệt" },
-                  { value: "Rejected", label: "Từ chối" },
-                  { value: "Draft", label: "Nháp" },
-                ]}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Ngày tạo
-              </label>
-              <RangePicker
-                value={dateRange}
-                onChange={setDateRange}
-                format="DD/MM/YYYY"
-                className="w-full"
-                placeholder={["Từ ngày", "Đến ngày"]}
-              />
-            </div>
-
-            <Space>
-              <Button onClick={handleResetFilters} icon={<ReloadOutlined />}>
-                Đặt lại
+          <Popover
+            content={filterPopoverContent}
+            title={
+              <span style={{ fontWeight: 600, fontSize: 15 }}>
+                Bộ lọc nâng cao
+              </span>
+            }
+            trigger="click"
+            open={filterPopoverOpen}
+            onOpenChange={(open) => {
+              if (open) {
+                handleOpenFilterPopover();
+              } else {
+                setFilterPopoverOpen(false);
+              }
+            }}
+            placement="bottomLeft"
+          >
+            <Badge count={activeFilterCount} size="small" offset={[-2, 2]}>
+              <Button icon={<FilterOutlined />} size="middle">
+                Bộ lọc
               </Button>
-              <Button
-                type="primary"
-                onClick={handleApplyFilters}
-                icon={<SearchOutlined />}
-              >
-                Áp dụng
-              </Button>
-            </Space>
-          </div>
+            </Badge>
+          </Popover>
+
+          {/* Active filter tags */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {statusFilter && (
+                <Tag
+                  closable
+                  onClose={() => {
+                    setStatusFilter(undefined);
+                    fetchReports(
+                      1,
+                      pagination.pageSize,
+                      null,
+                      dateRange,
+                    );
+                  }}
+                  color="blue"
+                >
+                  {STATUS_LABEL_MAP[statusFilter] || statusFilter}
+                </Tag>
+              )}
+              {dateRange?.[0] && dateRange?.[1] && (
+                <Tag
+                  closable
+                  onClose={() => {
+                    setDateRange(null);
+                    fetchReports(
+                      1,
+                      pagination.pageSize,
+                      statusFilter,
+                      null,
+                    );
+                  }}
+                  color="purple"
+                >
+                  {dateRange[0].format("DD/MM/YYYY")} →{" "}
+                  {dateRange[1].format("DD/MM/YYYY")}
+                </Tag>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="hidden md:block">
@@ -413,6 +532,7 @@ const ReportManager = () => {
               pageSize: pagination.pageSize,
               total: pagination.total,
               showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50"],
               showTotal: (total) => `Tổng ${total} báo cáo`,
             }}
             onChange={handleTableChange}
@@ -433,11 +553,11 @@ const ReportManager = () => {
               showTotal: (total) => `Tổng ${total} báo cáo`,
             }}
             onPaginationChange={(page, pageSize) => {
-              fetchReports(page, pageSize, currentFilters);
+              fetchReports(page, pageSize);
             }}
           />
         </div>
-      </Card>
+
 
       <Modal
         title={

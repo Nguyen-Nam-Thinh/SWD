@@ -1,4 +1,4 @@
-import { Modal, message, Button, Tag, Space, Input, Table } from "antd";
+import { Modal, message, Button, Space, Input, Table } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import industryService from "../services/industryService";
@@ -131,9 +131,9 @@ const IndustryManagement = () => {
       key: "code",
       width: 150,
       render: (text) => (
-        <Tag color="blue" className="font-bold">
+        <span className="font-bold text-gray-800">
           {text}
-        </Tag>
+        </span>
       ),
     },
     {
@@ -190,7 +190,7 @@ const IndustryManagement = () => {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="w-full md:w-auto">
           <Search
-            placeholder="Tìm mã, tên ngành..."
+            placeholder="Tìm theo mã, tên..."
             onSearch={handleSearch}
             onChange={handleSearchChange}
             value={searchTerm}
@@ -222,6 +222,7 @@ const IndustryManagement = () => {
         pagination={{
           ...pagination,
           showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
           showTotal: (total) => `Tổng ${total} ngành`,
         }}
         onChange={handleTableChange}

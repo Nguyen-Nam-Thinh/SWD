@@ -1,9 +1,23 @@
-import { Modal, message } from "antd";
-import { useState, useEffect, useRef } from "react";
+import {
+  Modal,
+  message,
+  Input,
+  Select,
+  Popover,
+  Badge,
+  Tag,
+  Divider,
+  Button,
+} from "antd";
+import { useState, useEffect, useMemo } from "react";
 import { Edit, Trash2 } from "lucide-react";
+import {
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import companyService from "../services/companyService";
 import industryService from "../services/industryService";
-import CompanySearchBar from "../components/company/CompanySearchBar";
 import CompanyTable from "../components/company/CompanyTable";
 import CompanyModal from "../components/company/CompanyModal";
 import ResponsiveTable from "../components/ResponsiveTable";
@@ -12,38 +26,72 @@ import AddNewButton from "../components/common/AddNewButton";
 const CompanyManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [companies, setCompanies] = useState([]);
+  const [allCompanies, setAllCompanies] = useState([]); // All data
   const [editingCompany, setEditingCompany] = useState(null);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-  const [filters, setFilters] = useState({});
   const [industries, setIndustries] = useState([]);
 
-  // Search states
-  const [searchField, setSearchField] = useState("ticker");
+  // Search state
   const [searchValue, setSearchValue] = useState("");
+
+  // Filter states (applied)
   const [stockExchangeFilter, setStockExchangeFilter] = useState(undefined);
   const [industryFilter, setIndustryFilter] = useState(undefined);
-  const searchTimerRef = useRef(null);
 
-  const loadCompanies = async (page = 1, pageSize = 10, filterParams = {}) => {
+  // Temp filter states (in popup)
+  const [tempStockExchangeFilter, setTempStockExchangeFilter] =
+    useState(undefined);
+  const [tempIndustryFilter, setTempIndustryFilter] = useState(undefined);
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+
+  // Active filter count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (stockExchangeFilter) count++;
+    if (industryFilter) count++;
+    return count;
+  }, [stockExchangeFilter, industryFilter]);
+
+  // Client-side filtering
+  const filteredCompanies = useMemo(() => {
+    let result = allCompanies;
+
+    // Search by ticker or company name
+    if (searchValue.trim()) {
+      const keyword = searchValue.trim().toLowerCase();
+      result = result.filter(
+        (item) =>
+          (item.ticker || "").toLowerCase().includes(keyword) ||
+          (item.companyName || "").toLowerCase().includes(keyword),
+      );
+    }
+
+    // Filter by stock exchange
+    if (stockExchangeFilter) {
+      result = result.filter(
+        (item) => item.stockExchange === stockExchangeFilter,
+      );
+    }
+
+    // Filter by industry
+    if (industryFilter) {
+      result = result.filter(
+        (item) =>
+          String(item.industryId) === String(industryFilter) ||
+          String(item.industry?.id) === String(industryFilter),
+      );
+    }
+
+    return result;
+  }, [allCompanies, searchValue, stockExchangeFilter, industryFilter]);
+
+  const loadCompanies = async () => {
     setLoading(true);
     try {
       const data = await companyService.getCompanies({
-        PageNumber: page,
-        PageSize: pageSize,
-        ...filterParams,
+        PageNumber: 1,
+        PageSize: 9999,
       });
-
-      setCompanies(data.items || data);
-      setPagination({
-        current: page,
-        pageSize: pageSize,
-        total: data.totalCount || data.length || 0,
-      });
+      setAllCompanies(data.items || data || []);
     } catch (error) {
       message.error("Không thể tải danh sách công ty");
     } finally {
@@ -65,53 +113,22 @@ const CompanyManagement = () => {
     }
   };
 
-  const buildFilterParams = (value = searchValue) => {
-    const newFilters = {};
-
-    if (value.trim()) {
-      if (searchField === "ticker") newFilters.Ticker = value.trim();
-      else if (searchField === "companyName")
-        newFilters.CompanyName = value.trim();
-    }
-
-    if (stockExchangeFilter) {
-      newFilters.StockExchange = stockExchangeFilter;
-    }
-
-    if (industryFilter) {
-      newFilters.IndustryId = industryFilter;
-    }
-
-    return newFilters;
+  // Filter popup handlers
+  const handleOpenFilterPopover = () => {
+    setTempStockExchangeFilter(stockExchangeFilter);
+    setTempIndustryFilter(industryFilter);
+    setFilterPopoverOpen(true);
   };
 
-  const handleSearch = (value = searchValue) => {
-    const newFilters = buildFilterParams(value);
-    setFilters(newFilters);
-    loadCompanies(1, pagination.pageSize, newFilters);
+  const handleApplyPopoverFilters = () => {
+    setStockExchangeFilter(tempStockExchangeFilter);
+    setIndustryFilter(tempIndustryFilter);
+    setFilterPopoverOpen(false);
   };
 
-  const handleResetFilters = () => {
-    setSearchField("ticker");
-    setSearchValue("");
-    setStockExchangeFilter(undefined);
-    setIndustryFilter(undefined);
-    const resetFilters = {};
-    setFilters(resetFilters);
-    loadCompanies(1, pagination.pageSize, resetFilters);
-  };
-
-  // Debounce: tự động search khi gõ sau 500ms
-  useEffect(() => {
-    clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => {
-      handleSearch(searchValue);
-    }, 500);
-    return () => clearTimeout(searchTimerRef.current);
-  }, [searchValue, searchField, stockExchangeFilter, industryFilter]);
-
-  const handleTableChange = (newPagination) => {
-    loadCompanies(newPagination.current, newPagination.pageSize, filters);
+  const handleResetPopoverFilters = () => {
+    setTempStockExchangeFilter(undefined);
+    setTempIndustryFilter(undefined);
   };
 
   const handleAdd = () => {
@@ -140,7 +157,7 @@ const CompanyManagement = () => {
         try {
           await companyService.deleteCompany(record.id);
           message.success("Xóa công ty thành công");
-          loadCompanies(pagination.current, pagination.pageSize, filters);
+          loadCompanies();
         } catch (error) {
           message.error("Xóa công ty thất bại");
         }
@@ -159,7 +176,7 @@ const CompanyManagement = () => {
         message.success("Thêm công ty thành công");
       }
       setIsModalOpen(false);
-      loadCompanies(pagination.current, pagination.pageSize, filters);
+      loadCompanies();
     } catch (error) {
       message.error(company ? "Cập nhật thất bại" : "Thêm công ty thất bại");
       throw error;
@@ -168,7 +185,7 @@ const CompanyManagement = () => {
     }
   };
 
-  // Cấu hình columns cho bản Mobile (Responsive Table)
+  // Columns for mobile
   const columns = [
     {
       title: "Mã CK (Ticker)",
@@ -196,7 +213,6 @@ const CompanyManagement = () => {
       render: (ex) => ex || "-",
     },
     {
-      // SỬA Ở ĐÂY CHO MOBILE:
       title: "Ngành",
       dataIndex: "industryName",
       key: "industryName",
@@ -264,28 +280,152 @@ const CompanyManagement = () => {
     },
   ];
 
-  const hasActiveFilters =
-    !!searchValue.trim() || !!stockExchangeFilter || !!industryFilter;
+  // Filter popover content
+  const filterPopoverContent = (
+    <div style={{ width: 300 }}>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Sàn
+        </label>
+        <Select
+          value={tempStockExchangeFilter}
+          onChange={setTempStockExchangeFilter}
+          className="w-full"
+          allowClear
+          placeholder="Chọn sàn"
+          options={[
+            { value: "HOSE", label: "HOSE" },
+            { value: "HNX", label: "HNX" },
+            { value: "UPCOM", label: "UPCOM" },
+          ]}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Ngành
+        </label>
+        <Select
+          value={tempIndustryFilter}
+          onChange={setTempIndustryFilter}
+          className="w-full"
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder="Chọn ngành"
+          options={(industries || []).map((ind) => ({
+            value: ind.id,
+            label: ind.nameVi || ind.nameEn || ind.code || "",
+          }))}
+        />
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Button icon={<ReloadOutlined />} onClick={handleResetPopoverFilters}>
+          Đặt lại
+        </Button>
+        <Button
+          type="primary"
+          icon={<FilterOutlined />}
+          onClick={handleApplyPopoverFilters}
+        >
+          Áp dụng
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
-      <h2 className="text-base md:text-lg font-bold mb-4">Danh sách công ty</h2>
+      <h2 className="text-base md:text-lg font-bold mb-4">
+        Danh sách công ty
+      </h2>
 
-      <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <CompanySearchBar
-          searchField={searchField}
-          setSearchField={setSearchField}
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-          stockExchangeFilter={stockExchangeFilter}
-          setStockExchangeFilter={setStockExchangeFilter}
-          industryFilter={industryFilter}
-          setIndustryFilter={setIndustryFilter}
-          industries={industries}
-          onSearch={handleSearch}
-          onReset={handleResetFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
+      {/* Search + Filter + Add */}
+      <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          <Input
+            placeholder="Tìm kiếm theo mã CK hoặc tên công ty..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            prefix={
+              <SearchOutlined className="text-gray-400 cursor-pointer hover:text-blue-500" />
+            }
+            allowClear
+            style={{ maxWidth: 400 }}
+            size="middle"
+          />
+
+          <Popover
+            content={filterPopoverContent}
+            title={
+              <span style={{ fontWeight: 600, fontSize: 15 }}>
+                Bộ lọc nâng cao
+              </span>
+            }
+            trigger="click"
+            open={filterPopoverOpen}
+            onOpenChange={(open) => {
+              if (open) {
+                handleOpenFilterPopover();
+              } else {
+                setFilterPopoverOpen(false);
+              }
+            }}
+            placement="bottomLeft"
+          >
+            <Badge count={activeFilterCount} size="small" offset={[-2, 2]}>
+              <Button icon={<FilterOutlined />} size="middle">
+                Bộ lọc
+              </Button>
+            </Badge>
+          </Popover>
+
+          {/* Active filter tags */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {stockExchangeFilter && (
+                <Tag
+                  closable
+                  onClose={() => setStockExchangeFilter(undefined)}
+                  color="blue"
+                >
+                  Sàn: {stockExchangeFilter}
+                </Tag>
+              )}
+              {industryFilter && (
+                <Tag
+                  closable
+                  onClose={() => setIndustryFilter(undefined)}
+                  color="purple"
+                >
+                  Ngành:{" "}
+                  {industries.find((i) => i.id === industryFilter)?.nameVi ||
+                    industryFilter}
+                </Tag>
+              )}
+            </div>
+          )}
+        </div>
+
         <AddNewButton
           onClick={handleAdd}
           label="Thêm công ty"
@@ -293,26 +433,28 @@ const CompanyManagement = () => {
         />
       </div>
 
-      <div className="mb-3 text-sm text-gray-600">
-        Tổng số Mã CK: <strong>{pagination.total}</strong>
-      </div>
-
+      {/* Desktop Table */}
       <div className="hidden md:block">
         <CompanyTable
-          companies={companies}
+          companies={filteredCompanies}
           loading={loading}
-          pagination={pagination}
-          onTableChange={handleTableChange}
+          pagination={{
+            defaultPageSize: 10,
+            showSizeChanger: true,
+            pageSizeOptions: ["10", "20", "50"],
+            showTotal: (total) => `Tổng ${total} Mã CK`,
+          }}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
       </div>
 
+      {/* Mobile */}
       <div className="md:hidden">
         <ResponsiveTable
           columns={columns}
-          data={companies}
-          itemsPerPage={pagination.pageSize}
+          data={filteredCompanies}
+          itemsPerPage={10}
           searchable={false}
           onRowClick={(row) => handleEdit(row)}
         />

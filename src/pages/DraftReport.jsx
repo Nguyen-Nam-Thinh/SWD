@@ -1,10 +1,27 @@
-import { useState, useEffect } from "react";
-import { Table, Button, Card, Space, message, Popconfirm, Modal } from "antd";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Table,
+  Button,
+  Card,
+  Space,
+  message,
+  Popconfirm,
+  Modal,
+  Input,
+  Select,
+  Popover,
+  Badge,
+  Tag,
+  Divider,
+} from "antd";
 import {
   DeleteOutlined,
   AuditOutlined,
   InfoCircleOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { Eye, Trash2, Info } from "lucide-react";
 import dayjs from "dayjs";
@@ -28,17 +45,55 @@ const DraftReport = () => {
     total: 0,
   });
 
+  // Search state
+  const [searchValue, setSearchValue] = useState("");
+
+  // Filter states (applied)
+  const [statusFilter, setStatusFilter] = useState(undefined);
+
+  // Temp filter states (in popup)
+  const [tempStatusFilter, setTempStatusFilter] = useState(undefined);
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter) count++;
+    return count;
+  }, [statusFilter]);
+
+  // Client-side filtered data
+  const filteredData = useMemo(() => {
+    let result = data;
+
+    // Filter by search
+    if (searchValue.trim()) {
+      const keyword = searchValue.trim().toLowerCase();
+      result = result.filter(
+        (item) =>
+          (item.fileName || "").toLowerCase().includes(keyword) ||
+          (item.companyName || "").toLowerCase().includes(keyword),
+      );
+    }
+
+    // Filter by status
+    if (statusFilter) {
+      result = result.filter((item) => item.status === statusFilter);
+    }
+
+    return result;
+  }, [data, searchValue, statusFilter]);
+
   // 1. Fetch danh sách khi vào trang (hoặc khi không chọn báo cáo nào)
   useEffect(() => {
     if (!selectedReportId) {
       fetchDrafts();
     }
-  }, [selectedReportId]); // Bỏ pagination.current khỏi dependency vì sẽ pagination ở client-side
+  }, [selectedReportId]);
 
   const fetchDrafts = async () => {
     setLoading(true);
     try {
-      // Lấy TẤT CẢ draft và rejected (pageSize lớn để lấy hết)
       const [draftRes, rejectedRes] = await Promise.all([
         reportService.getReports({
           PageNumber: 1,
@@ -52,26 +107,22 @@ const DraftReport = () => {
         }),
       ]);
 
-      // Merge 2 kết quả
       const combinedData = [
         ...(draftRes.items || []),
         ...(rejectedRes.items || []),
       ];
 
-      // Loại bỏ duplicate (nếu có)
       const uniqueData = Array.from(
         new Map(combinedData.map((item) => [item.id, item])).values(),
       );
 
-      // Sắp xếp theo ngày tạo mới nhất đến cũ nhất
       const sortedData = uniqueData.sort((a, b) => {
         const dateA = new Date(a.uploadedAt);
         const dateB = new Date(b.uploadedAt);
-        return dateB - dateA; // Giảm dần (mới nhất trước)
+        return dateB - dateA;
       });
 
       setData(sortedData);
-      // Set total đúng bằng số lượng data thực tế sau khi merge
       setPagination((prev) => ({
         ...prev,
         total: sortedData.length,
@@ -84,6 +135,28 @@ const DraftReport = () => {
     }
   };
 
+  // Search handler
+  const handleSearch = () => {
+    // Client-side search, no need to refetch
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  // Filter popup handlers
+  const handleOpenFilterPopover = () => {
+    setTempStatusFilter(statusFilter);
+    setFilterPopoverOpen(true);
+  };
+
+  const handleApplyPopoverFilters = () => {
+    setStatusFilter(tempStatusFilter);
+    setFilterPopoverOpen(false);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleResetPopoverFilters = () => {
+    setTempStatusFilter(undefined);
+  };
+
   const handleDelete = async (id) => {
     try {
       await reportService.deleteReport(id);
@@ -93,7 +166,6 @@ const DraftReport = () => {
       console.error("Delete error:", e);
       if (e.response?.status === 401) {
         message.error("Phiên đăng nhập hết hạn. Vui lòng thử lại.");
-        // Retry sau khi token đã được refresh
         setTimeout(async () => {
           try {
             await reportService.deleteReport(id);
@@ -134,16 +206,59 @@ const DraftReport = () => {
     }
   };
 
-  // --- LOGIC CHUYỂN MÀN HÌNH ---
+  // Filter popover content
+  const filterPopoverContent = (
+    <div style={{ width: 300 }}>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Trạng thái
+        </label>
+        <Select
+          value={tempStatusFilter}
+          onChange={setTempStatusFilter}
+          className="w-full"
+          allowClear
+          placeholder="Chọn trạng thái"
+          options={[
+            { value: "Draft", label: "Nháp" },
+            { value: "Rejected", label: "Từ chối" },
+          ]}
+        />
+      </div>
 
-  // Nếu có ID -> Hiển thị màn hình 2 cột (Split View)
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Button icon={<ReloadOutlined />} onClick={handleResetPopoverFilters}>
+          Đặt lại
+        </Button>
+        <Button
+          type="primary"
+          icon={<FilterOutlined />}
+          onClick={handleApplyPopoverFilters}
+        >
+          Áp dụng
+        </Button>
+      </div>
+    </div>
+  );
+
+  // --- LOGIC CHUYỂN MÀN HÌNH ---
   if (selectedReportId) {
     return (
       <SplitComparisonView
         reportId={selectedReportId}
         onBack={() => {
-          setSelectedReportId(null); // Quay về list
-          fetchDrafts(); // Refresh lại dữ liệu mới nhất
+          setSelectedReportId(null);
+          fetchDrafts();
         }}
       />
     );
@@ -329,6 +444,68 @@ const DraftReport = () => {
         variant="borderless"
         className="shadow-sm h-full"
       >
+        {/* Search bar + Filter button */}
+        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Tìm kiếm theo tên báo cáo, công ty..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onPressEnter={handleSearch}
+            prefix={
+              <SearchOutlined
+                className="text-gray-400 cursor-pointer hover:text-blue-500"
+                onClick={handleSearch}
+              />
+            }
+            allowClear
+            style={{ maxWidth: 400 }}
+            size="middle"
+          />
+
+          <Popover
+            content={filterPopoverContent}
+            title={
+              <span style={{ fontWeight: 600, fontSize: 15 }}>
+                Bộ lọc nâng cao
+              </span>
+            }
+            trigger="click"
+            open={filterPopoverOpen}
+            onOpenChange={(open) => {
+              if (open) {
+                handleOpenFilterPopover();
+              } else {
+                setFilterPopoverOpen(false);
+              }
+            }}
+            placement="bottomLeft"
+          >
+            <Badge count={activeFilterCount} size="small" offset={[-2, 2]}>
+              <Button icon={<FilterOutlined />} size="middle">
+                Bộ lọc
+              </Button>
+            </Badge>
+          </Popover>
+
+          {/* Active filter tags */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {statusFilter && (
+                <Tag
+                  closable
+                  onClose={() => {
+                    setStatusFilter(undefined);
+                    setPagination((prev) => ({ ...prev, current: 1 }));
+                  }}
+                  color="blue"
+                >
+                  {statusFilter === "Draft" ? "Nháp" : "Từ chối"}
+                </Tag>
+              )}
+            </div>
+          )}
+        </div>
+
         <style>
           {`
           .rejected-row {
@@ -340,16 +517,18 @@ const DraftReport = () => {
         `}
         </style>
 
-        {/* Desktop Table - Ẩn trên mobile */}
+        {/* Desktop Table */}
         <div className="hidden md:block">
           <Table
             rowKey="id"
             columns={columns}
-            dataSource={data}
+            dataSource={filteredData}
             loading={loading}
             pagination={{
               ...pagination,
+              total: filteredData.length,
               showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50"],
               showTotal: (total) => `Tổng ${total} báo cáo`,
               onChange: (page, pageSize) =>
                 setPagination((prev) => ({
@@ -381,13 +560,13 @@ const DraftReport = () => {
           />
         </div>
 
-        {/* Mobile/Tablet View - Chỉ hiện trên mobile */}
+        {/* Mobile/Tablet View */}
         <div className="md:hidden">
           <ResponsiveTable
             columns={mobileColumns}
-            data={data}
+            data={filteredData}
             itemsPerPage={pagination.pageSize}
-            searchable={true}
+            searchable={false}
             searchPlaceholder="Tìm kiếm báo cáo..."
           />
         </div>

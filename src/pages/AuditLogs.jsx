@@ -1,7 +1,23 @@
 // src/pages/AuditLogs.jsx
-import React, { useState, useEffect } from "react";
-import { Table, DatePicker, Input, Tag, message, Button, Space } from "antd";
-import { EyeOutlined, SearchOutlined } from "@ant-design/icons";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Table,
+  DatePicker,
+  Input,
+  Tag,
+  message,
+  Button,
+  Popover,
+  Badge,
+  Select,
+  Divider,
+} from "antd";
+import {
+  EyeOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import { Eye } from "lucide-react";
 import dayjs from "dayjs";
 import { getAuditLogs } from "../services/auditLogService";
@@ -20,6 +36,8 @@ const ACTION_LABEL_MAP = {
   DELETE_COMPANY: "Xóa công ty",
   DELETE_METRIC: "Xóa chỉ số",
 };
+
+
 
 const toVietnameseAction = (actionType = "") => {
   if (!actionType) return "-";
@@ -40,6 +58,9 @@ const AuditLogs = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Danh sách action types lấy từ dữ liệu thực tế
+  const [availableActionTypes, setAvailableActionTypes] = useState(new Set());
+
   // State phân trang
   const [pagination, setPagination] = useState({
     current: 1,
@@ -47,17 +68,62 @@ const AuditLogs = () => {
     total: 0,
   });
 
-  // State bộ lọc
+  // State bộ lọc chính (đã áp dụng)
   const [filters, setFilters] = useState({
     searchTerm: "",
     fromDate: null,
     toDate: null,
+    actionTypes: [],
+  });
+
+  // State bộ lọc tạm trong popup (chưa áp dụng)
+  const [tempFilters, setTempFilters] = useState({
+    fromDate: null,
+    toDate: null,
+    actionTypes: [],
   });
 
   // State cho Modal chi tiết
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [showDateFilter, setShowDateFilter] = useState(false);
+
+  // State cho Filter Popover
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+
+  // Page size riêng cho client-side filtering
+  const [clientPageSize, setClientPageSize] = useState(10);
+
+  // Tạo options cho dropdown từ action types thực tế
+  const actionTypeOptions = useMemo(() => {
+    return Array.from(availableActionTypes)
+      .sort()
+      .map((type) => ({
+        value: type,
+        label: ACTION_LABEL_MAP[type.trim().toUpperCase()] || type,
+      }));
+  }, [availableActionTypes]);
+
+  // Đếm số filter đang active (ngoài search)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.fromDate || filters.toDate) count++;
+    if (filters.actionTypes.length > 0) count++;
+    return count;
+  }, [filters]);
+
+  // Có đang dùng FE filter (actionTypes) không?
+  const isClientFiltering = filters.actionTypes.length > 0;
+
+  // Lọc data trên FE theo actionTypes
+  const filteredData = useMemo(() => {
+    if (!filters.actionTypes || filters.actionTypes.length === 0) {
+      return data;
+    }
+    return data.filter((item) =>
+      filters.actionTypes.includes(item.actionType),
+    );
+  }, [data, filters.actionTypes]);
+
   const fetchData = async (
     page = 1,
     pageSize = 10,
@@ -85,13 +151,26 @@ const AuditLogs = () => {
         params.SearchTerm = currentFilters.searchTerm.trim();
       }
 
+
       const response = await getAuditLogs(params);
-      setData(response.items || []);
+      const items = response.items || [];
+      setData(items);
       setPagination({
         current: response.pageNumber,
         pageSize: response.pageSize,
         total: response.totalCount,
       });
+
+      // Tích lũy action types từ dữ liệu
+      if (items.length > 0) {
+        setAvailableActionTypes((prev) => {
+          const newSet = new Set(prev);
+          items.forEach((item) => {
+            if (item.actionType) newSet.add(item.actionType);
+          });
+          return newSet;
+        });
+      }
     } catch (error) {
       console.error(error);
       message.error("Không thể tải dữ liệu!");
@@ -102,34 +181,97 @@ const AuditLogs = () => {
 
   useEffect(() => {
     fetchData(1, 10, filters);
+
+    // Fetch thêm 1 batch lớn để lấy đầy đủ action types
+    const fetchActionTypes = async () => {
+      try {
+        const response = await getAuditLogs({
+          PageNumber: 1,
+          PageSize: 200,
+          SortBy: "timestamp",
+          IsDescending: true,
+        });
+        const items = response.items || [];
+        const types = new Set();
+        items.forEach((item) => {
+          if (item.actionType) types.add(item.actionType);
+        });
+        setAvailableActionTypes((prev) => {
+          const merged = new Set(prev);
+          types.forEach((t) => merged.add(t));
+          return merged;
+        });
+      } catch (error) {
+        console.error("Error fetching action types:", error);
+      }
+    };
+    fetchActionTypes();
   }, []);
 
+  // Search bar handlers
   const handleSearchChange = (e) => {
-    const newFilters = { ...filters, searchTerm: e.target.value };
-    setFilters(newFilters);
+    setFilters((prev) => ({ ...prev, searchTerm: e.target.value }));
   };
 
-  const onDateRangeChange = (dates) => {
-    setFilters({
-      ...filters,
+  const handleSearchEnter = () => {
+    if (filters.actionTypes.length > 0) {
+      // Khi đang filter actionTypes trên FE, cần fetch all
+      fetchData(1, 9999, filters);
+    } else {
+      fetchData(1, pagination.pageSize, filters);
+    }
+  };
+
+  // Filter popup handlers
+  const handleOpenFilterPopover = () => {
+    // Sync temp filters với filters hiện tại khi mở popup
+    setTempFilters({
+      fromDate: filters.fromDate,
+      toDate: filters.toDate,
+      actionTypes: [...filters.actionTypes],
+    });
+    setFilterPopoverOpen(true);
+  };
+
+  const handleTempDateRangeChange = (dates) => {
+    setTempFilters((prev) => ({
+      ...prev,
       fromDate: dates ? dates[0] : null,
       toDate: dates ? dates[1] : null,
-    });
+    }));
+  };
+
+  const handleTempActionTypeChange = (values) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      actionTypes: values,
+    }));
   };
 
   const handleApplyFilter = () => {
-    fetchData(1, pagination.pageSize, filters);
+    const newFilters = {
+      ...filters,
+      fromDate: tempFilters.fromDate,
+      toDate: tempFilters.toDate,
+      actionTypes: tempFilters.actionTypes,
+    };
+    setFilters(newFilters);
+    setFilterPopoverOpen(false);
+    if (newFilters.actionTypes.length > 0) {
+      // Fetch all data để lọc trên FE
+      fetchData(1, 9999, newFilters);
+    } else {
+      fetchData(1, pagination.pageSize, newFilters);
+    }
   };
 
   const handleResetFilter = () => {
-    const resetFilters = {
-      searchTerm: "",
+    const resetTemp = {
       fromDate: null,
       toDate: null,
+      actionTypes: [],
     };
-    setFilters(resetFilters);
-    setShowDateFilter(false);
-    fetchData(1, pagination.pageSize, resetFilters);
+    setTempFilters(resetTemp);
   };
 
   const handleViewDetail = (record) => {
@@ -155,6 +297,74 @@ const AuditLogs = () => {
       ) : (
         <span className="text-gray-400 text-sm">Không có dữ liệu</span>
       )}
+    </div>
+  );
+
+  // Nội dung popup filter
+  const filterPopoverContent = (
+    <div style={{ width: 340 }}>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Khoảng thời gian
+        </label>
+        <RangePicker
+          showTime
+          value={[tempFilters.fromDate, tempFilters.toDate]}
+          onChange={handleTempDateRangeChange}
+          format="DD/MM/YYYY HH:mm"
+          placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
+          style={{ width: "100%" }}
+          size="middle"
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Loại hành động
+        </label>
+        <Select
+          mode="multiple"
+          allowClear
+          placeholder="Chọn loại hành động"
+          value={tempFilters.actionTypes}
+          onChange={handleTempActionTypeChange}
+          options={actionTypeOptions}
+          style={{ width: "100%" }}
+          size="middle"
+          maxTagCount="responsive"
+        />
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Button icon={<ReloadOutlined />} onClick={handleResetFilter}>
+          Đặt lại
+        </Button>
+        <Button
+          type="primary"
+          icon={<FilterOutlined />}
+          onClick={handleApplyFilter}
+        >
+          Áp dụng
+        </Button>
+      </div>
     </div>
   );
 
@@ -227,76 +437,120 @@ const AuditLogs = () => {
 
   return (
     <div className="bg-white p-3 md:p-6 rounded-lg shadow-sm h-full">
-      <h2 className="text-base md:text-lg font-bold mb-4">Nhật ký hoạt động</h2>
+      <h2 className="text-base md:text-lg font-bold mb-4">
+        Nhật ký hoạt động
+      </h2>
 
-      <div className="mb-4 md:mb-6 bg-gray-50 p-3 md:p-4 rounded-md border border-gray-100">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-          <div className="md:max-w-sm">
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-              Người thực hiện
-            </label>
-            <Input
-              placeholder="Nhập username..."
-              value={filters.searchTerm}
-              onChange={handleSearchChange}
-              onPressEnter={handleApplyFilter}
-              prefix={<SearchOutlined className="text-gray-400" />}
-              allowClear
-              className="w-full"
-              size="middle"
-            />
+      {/* Search bar + Filter button */}
+      <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Tìm kiếm theo người thực hiện, mô tả..."
+          value={filters.searchTerm}
+          onChange={handleSearchChange}
+          onPressEnter={handleSearchEnter}
+          prefix={<SearchOutlined className="text-gray-400 cursor-pointer hover:text-blue-500" onClick={handleSearchEnter} />}
+          allowClear
+          style={{ maxWidth: 400 }}
+          size="middle"
+        />
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={() => setShowDateFilter((prev) => !prev)}>
-                {showDateFilter ? "Ẩn chọn ngày" : "Chọn ngày"}
-              </Button>
-              <Button onClick={handleResetFilter}>Đặt lại</Button>
-              <Button
-                type="primary"
-                onClick={handleApplyFilter}
-                icon={<SearchOutlined />}
+        <Popover
+          content={filterPopoverContent}
+          title={
+            <span style={{ fontWeight: 600, fontSize: 15 }}>
+              Bộ lọc nâng cao
+            </span>
+          }
+          trigger="click"
+          open={filterPopoverOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              handleOpenFilterPopover();
+            } else {
+              setFilterPopoverOpen(false);
+            }
+          }}
+          placement="bottomLeft"
+        >
+          <Badge count={activeFilterCount} size="small" offset={[-2, 2]}>
+            <Button icon={<FilterOutlined />} size="middle">
+              Bộ lọc
+            </Button>
+          </Badge>
+        </Popover>
+
+        {/* Hiển thị tag các filter đang active */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(filters.fromDate || filters.toDate) && (
+              <Tag
+                closable
+                onClose={() => {
+                  const newFilters = {
+                    ...filters,
+                    fromDate: null,
+                    toDate: null,
+                  };
+                  setFilters(newFilters);
+                  if (newFilters.actionTypes.length > 0) {
+                    fetchData(1, 9999, newFilters);
+                  } else {
+                    fetchData(1, pagination.pageSize, newFilters);
+                  }
+                }}
+                color="blue"
               >
-                Áp dụng
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            {showDateFilter && (
-              <>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                  Ngày bắt đầu - Ngày kết thúc
-                </label>
-                <RangePicker
-                  showTime
-                  value={[filters.fromDate, filters.toDate]}
-                  onChange={onDateRangeChange}
-                  format="DD/MM/YYYY HH:mm"
-                  placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
-                  className="w-full"
-                  size="middle"
-                />
-              </>
+                {filters.fromDate?.format("DD/MM/YYYY") || "..."} →{" "}
+                {filters.toDate?.format("DD/MM/YYYY") || "..."}
+              </Tag>
+            )}
+            {filters.actionTypes.length > 0 && (
+              <Tag
+                closable
+                onClose={() => {
+                  const newFilters = { ...filters, actionTypes: [] };
+                  setFilters(newFilters);
+                  // Quay về server-side pagination
+                  fetchData(1, 10, newFilters);
+                }}
+                color="purple"
+              >
+                {filters.actionTypes
+                  .map((t) => ACTION_LABEL_MAP[t] || t)
+                  .join(", ")}
+              </Tag>
             )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Desktop Table */}
       <div className="hidden md:block">
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={filteredData}
           rowKey="id"
           loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} bản ghi`,
-            onChange: (page, pageSize) => fetchData(page, pageSize, filters),
-          }}
+          pagination={
+            isClientFiltering
+              ? {
+                pageSize: clientPageSize,
+                showSizeChanger: true,
+                pageSizeOptions: ["10", "20", "50"],
+                showTotal: (total) => `Tổng ${total} bản ghi`,
+                onShowSizeChange: (_, size) => setClientPageSize(size),
+              }
+              : {
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                pageSizeOptions: ["10", "20", "50"],
+                showTotal: (total) => `Tổng ${total} bản ghi`,
+                onChange: (page, pageSize) =>
+                  fetchData(page, pageSize, filters),
+              }
+          }
           scroll={{ x: 800 }}
         />
       </div>
@@ -304,24 +558,33 @@ const AuditLogs = () => {
       {/* Mobile Responsive Table */}
       <div className="md:hidden">
         <ResponsiveTable
-          data={data}
+          data={filteredData}
           columns={columns.filter((col) => col.key !== "action")}
           loading={loading}
           renderActions={renderMobileActions}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showTotal: (total) => `Tổng ${total} bản ghi`,
-          }}
+          pagination={
+            isClientFiltering
+              ? {
+                pageSize: clientPageSize,
+                showTotal: (total) => `Tổng ${total} bản ghi`,
+              }
+              : {
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showTotal: (total) => `Tổng ${total} bản ghi`,
+              }
+          }
           onPaginationChange={(page, pageSize) => {
-            fetchData(page, pageSize, filters);
+            if (!isClientFiltering) {
+              fetchData(page, pageSize, filters);
+            }
           }}
           searchable={false}
         />
       </div>
 
-      {/* Gọi Component ở đây */}
+      {/* Modal chi tiết */}
       <AuditDetailModal
         visible={modalVisible}
         record={selectedRecord}
