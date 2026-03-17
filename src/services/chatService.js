@@ -12,7 +12,10 @@ const chatService = {
       payload.companyId = companyId;
     }
 
-    const response = await api.post("/Chat/ask", payload);
+    // Chat AI cần thời gian phản hồi lâu hơn bình thường
+    const response = await api.post("/Chat/messages", payload, {
+      timeout: 120000, // 120 giây cho chat AI
+    });
     return response.data;
   },
 };

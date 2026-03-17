@@ -118,8 +118,8 @@ const DashboardChart = ({ chartData, loading }) => {
         <Segmented
           options={[
             { label: "Tuần", value: "week" },
-            { label: "Tháng", value: "month", disabled: true }, // Tạm disable nếu chưa làm logic tháng
-            { label: "Năm", value: "year", disabled: true }, // Tạm disable nếu chưa làm logic năm
+            { label: "Tháng", value: "month" },
+            { label: "Năm", value: "year" },
           ]}
           value={timeRange}
           onChange={setTimeRange}

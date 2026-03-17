@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Table,
   Tag,
@@ -15,13 +15,21 @@ import {
   Spin,
   Modal,
   Divider,
+  Popover,
+  Badge,
+  DatePicker,
 } from "antd";
 import {
   EyeOutlined,
   BarChartOutlined,
   SendOutlined,
   ArrowLeftOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
+
+const { RangePicker } = DatePicker;
 import { Eye, TrendingUp } from "lucide-react";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
@@ -73,6 +81,18 @@ const AnalysisReports = () => {
     total: 0,
   });
 
+  // History search/filter state
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateRange, setHistoryDateRange] = useState(null);
+  const [tempHistoryDateRange, setTempHistoryDateRange] = useState(null);
+  const [historyFilterOpen, setHistoryFilterOpen] = useState(false);
+
+  const historyActiveFilterCount = useMemo(() => {
+    let count = 0;
+    if (historyDateRange?.[0] && historyDateRange?.[1]) count++;
+    return count;
+  }, [historyDateRange]);
+
   // Pagination state
   const [pagination, setPagination] = useState({
     current: 1,
@@ -116,27 +136,72 @@ const AnalysisReports = () => {
     }
   };
 
-  // Fetch analysis history
-  const fetchAnalysisHistory = async (page = 1, pageSize = 10) => {
+  // Fetch analysis history - fetch ALL data for client-side filtering
+  const fetchAnalysisHistory = async () => {
     setLoadingHistory(true);
     try {
       const response = await analysisService.getAnalysisHistory({
-        PageNumber: page,
-        PageSize: pageSize,
+        PageNumber: 1,
+        PageSize: 9999,
       });
 
       setAnalysisHistory(response.items || []);
-      setHistoryPagination({
-        current: response.pageNumber || 1,
-        pageSize: response.pageSize || 10,
-        total: response.totalCount || 0,
-      });
     } catch (error) {
       console.error("Lỗi fetch analysis history:", error);
       message.error("Lỗi tải lịch sử phân tích");
     } finally {
       setLoadingHistory(false);
     }
+  };
+
+  // Client-side filtered history data
+  const filteredHistory = useMemo(() => {
+    let result = analysisHistory;
+
+    // Filter by search keyword
+    if (historySearch.trim()) {
+      const keyword = historySearch.trim().toLowerCase();
+      result = result.filter(
+        (item) =>
+          (item.title || "").toLowerCase().includes(keyword) ||
+          (item.companyName || "").toLowerCase().includes(keyword) ||
+          (item.content || "").toLowerCase().includes(keyword),
+      );
+    }
+
+    // Filter by date range
+    if (historyDateRange?.[0] && historyDateRange?.[1]) {
+      const fromDate = historyDateRange[0].startOf("day");
+      const toDate = historyDateRange[1].endOf("day");
+      result = result.filter((item) => {
+        const itemDate = dayjs(
+          item.updatedAt || item.modifiedAt || item.createdAt,
+        );
+        return (
+          itemDate.isValid() &&
+          itemDate.isAfter(fromDate.subtract(1, "ms")) &&
+          itemDate.isBefore(toDate.add(1, "ms"))
+        );
+      });
+    }
+
+    return result;
+  }, [analysisHistory, historySearch, historyDateRange]);
+
+  // History search/filter handlers
+  const handleHistorySearch = () => {
+    // Client-side - useMemo handles it, just reset pagination
+    setHistoryPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleHistoryApplyFilter = () => {
+    setHistoryDateRange(tempHistoryDateRange);
+    setHistoryFilterOpen(false);
+    setHistoryPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleHistoryResetFilter = () => {
+    setTempHistoryDateRange(null);
   };
 
   // View analysis detail
@@ -439,13 +504,19 @@ const AnalysisReports = () => {
     .sort((a, b) => b - a);
 
   const getHistoryCompany = (item) => {
-    return (
-      item.companyName ||
-      item.company?.companyName ||
-      item.ticker ||
-      item.companyTicker ||
-      "-"
-    );
+    // Ưu tiên field trực tiếp
+    if (item.companyName) return item.companyName;
+    if (item.company?.companyName) return item.company.companyName;
+    if (item.ticker) return item.ticker;
+    if (item.companyTicker) return item.companyTicker;
+
+    // Trích xuất từ title: "HPG - phân tích cho tôi (17/03/2026 23:39)"
+    if (item.title) {
+      const match = item.title.match(/^([A-Z]{2,10})\s*-/);
+      if (match) return match[1];
+    }
+
+    return "-";
   };
 
   const getHistoryReport = (item) => {
@@ -635,8 +706,123 @@ const AnalysisReports = () => {
               className="!text-lg md:!text-2xl"
               style={{ margin: 0 }}
             >
-              📊 Lịch sử Phân tích AI
+              📊 Lịch sử Phân tích Báo Cáo
             </Title>
+          </div>
+
+          {/* Search + Filter */}
+          <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="Tìm kiếm theo tiêu đề, công ty..."
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              onPressEnter={handleHistorySearch}
+              prefix={
+                <SearchOutlined
+                  className="text-gray-400 cursor-pointer hover:text-blue-500"
+                  onClick={handleHistorySearch}
+                />
+              }
+              allowClear
+              style={{ maxWidth: 400 }}
+              size="middle"
+            />
+
+            <Popover
+              content={
+                <div style={{ width: 340 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#475569",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Khoảng thời gian
+                    </label>
+                    <RangePicker
+                      value={tempHistoryDateRange}
+                      onChange={setTempHistoryDateRange}
+                      format="DD/MM/YYYY"
+                      style={{ width: "100%" }}
+                      placeholder={["Từ ngày", "Đến ngày"]}
+                    />
+                  </div>
+                  <Divider style={{ margin: "12px 0" }} />
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={handleHistoryResetFilter}
+                    >
+                      Đặt lại
+                    </Button>
+                    <Button
+                      type="primary"
+                      icon={<FilterOutlined />}
+                      onClick={handleHistoryApplyFilter}
+                    >
+                      Áp dụng
+                    </Button>
+                  </div>
+                </div>
+              }
+              title={
+                <span style={{ fontWeight: 600, fontSize: 15 }}>
+                  Bộ lọc nâng cao
+                </span>
+              }
+              trigger="click"
+              open={historyFilterOpen}
+              onOpenChange={(open) => {
+                if (open) {
+                  setTempHistoryDateRange(historyDateRange);
+                  setHistoryFilterOpen(true);
+                } else {
+                  setHistoryFilterOpen(false);
+                }
+              }}
+              placement="bottomLeft"
+            >
+              <Badge
+                count={historyActiveFilterCount}
+                size="small"
+                offset={[-2, 2]}
+              >
+                <Button icon={<FilterOutlined />} size="middle">
+                  Bộ lọc
+                </Button>
+              </Badge>
+            </Popover>
+
+            {/* Filter tags */}
+            {historyActiveFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {historyDateRange?.[0] && historyDateRange?.[1] && (
+                  <Tag
+                    closable
+                    onClose={() => {
+                      setHistoryDateRange(null);
+                      setHistoryPagination((prev) => ({
+                        ...prev,
+                        current: 1,
+                      }));
+                    }}
+                    color="blue"
+                  >
+                    {historyDateRange[0].format("DD/MM/YYYY")} →{" "}
+                    {historyDateRange[1].format("DD/MM/YYYY")}
+                  </Tag>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Desktop Table */}
@@ -650,7 +836,7 @@ const AnalysisReports = () => {
                   align: "center",
                   render: (_, __, index) =>
                     (historyPagination.current - 1) *
-                      historyPagination.pageSize +
+                    historyPagination.pageSize +
                     index +
                     1,
                 },
@@ -683,8 +869,8 @@ const AnalysisReports = () => {
                     <div className="text-sm">
                       {getHistoryUpdatedAt(item)
                         ? dayjs(getHistoryUpdatedAt(item)).format(
-                            "DD/MM/YYYY HH:mm:ss",
-                          )
+                          "DD/MM/YYYY HH:mm:ss",
+                        )
                         : "-"}
                     </div>
                   ),
@@ -705,17 +891,20 @@ const AnalysisReports = () => {
                   ),
                 },
               ]}
-              dataSource={analysisHistory}
+              dataSource={filteredHistory}
               rowKey="id"
               loading={loadingHistory}
               pagination={{
-                current: historyPagination.current,
                 pageSize: historyPagination.pageSize,
-                total: historyPagination.total,
                 showSizeChanger: true,
+                pageSizeOptions: ["10", "20", "50"],
                 showTotal: (total) => `Tổng ${total} phân tích`,
-                onChange: (page, pageSize) =>
-                  fetchAnalysisHistory(page, pageSize),
+                onShowSizeChange: (_, size) =>
+                  setHistoryPagination((prev) => ({
+                    ...prev,
+                    pageSize: size,
+                    current: 1,
+                  })),
               }}
               className="mt-4"
             />
@@ -729,7 +918,7 @@ const AnalysisReports = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {analysisHistory.map((item, index) => (
+                {filteredHistory.map((item, index) => (
                   <Card
                     key={item.id}
                     size="small"
@@ -755,8 +944,8 @@ const AnalysisReports = () => {
                         <span>
                           {getHistoryUpdatedAt(item)
                             ? dayjs(getHistoryUpdatedAt(item)).format(
-                                "DD/MM/YYYY HH:mm:ss",
-                              )
+                              "DD/MM/YYYY HH:mm:ss",
+                            )
                             : "-"}
                         </span>
                         <Button

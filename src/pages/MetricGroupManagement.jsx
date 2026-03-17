@@ -186,6 +186,7 @@ const MetricGroupManagement = () => {
         pagination={{
           ...pagination,
           showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
           showTotal: (total) => `Tổng ${total} nhóm`,
         }}
         onChange={handleTableChange}

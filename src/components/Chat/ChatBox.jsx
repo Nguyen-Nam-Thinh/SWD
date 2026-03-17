@@ -396,9 +396,27 @@ const Chatbox = ({ companies = [] }) => {
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
+      console.error("Chat error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error code:", error.code);
+
+      let errorText = "Xin lỗi, hệ thống đang bận.";
+      if (error.code === "ECONNABORTED") {
+        errorText =
+          "Yêu cầu mất quá nhiều thời gian. Vui lòng thử lại với câu hỏi ngắn gọn hơn.";
+      } else if (error.code === "ERR_NETWORK") {
+        errorText = "Không thể kết nối đến server. Vui lòng kiểm tra mạng.";
+      } else if (error.response?.status === 500) {
+        errorText =
+          error.response?.data?.message ||
+          "Lỗi server. Vui lòng thử lại sau.";
+      } else if (error.response?.data?.message) {
+        errorText = error.response.data.message;
+      }
+
       const errorMessage = {
         id: Date.now() + 1,
-        text: "Xin lỗi, hệ thống đang bận.",
+        text: errorText,
         sender: "bot",
         timestamp: new Date().toLocaleTimeString("vi-VN", {
           hour: "2-digit",

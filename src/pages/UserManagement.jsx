@@ -1,5 +1,5 @@
-// src/pages/Dashboard/UserManagement.jsx (Phần liên quan)
-import { useState, useEffect } from "react";
+// src/pages/Dashboard/UserManagement.jsx
+import { useState, useEffect, useMemo } from "react";
 import {
   Table,
   Button,
@@ -9,6 +9,10 @@ import {
   Tooltip,
   Input,
   Select,
+  Popover,
+  Badge,
+  Tag,
+  Divider,
 } from "antd";
 import {
   EditOutlined,
@@ -17,6 +21,7 @@ import {
   UnlockOutlined,
   SearchOutlined,
   FilterOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { Eye, Edit, Lock, Unlock } from "lucide-react";
 import userService from "../services/userService";
@@ -26,7 +31,6 @@ import ResponsiveTable from "../components/ResponsiveTable";
 import ReportStatusTag from "../components/common/ReportStatusTag";
 
 const UserManagement = () => {
-  // ... (giữ nguyên các state cũ) ...
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -38,41 +42,59 @@ const UserManagement = () => {
     total: 0,
   });
 
-  const [searchField, setSearchField] = useState("username");
+  // Search state
   const [searchValue, setSearchValue] = useState("");
+
+  // Filter states (applied)
   const [roleFilter, setRoleFilter] = useState(undefined);
   const [statusFilter, setStatusFilter] = useState(undefined);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const buildQueryParams = (page, pageSize) => {
-    const params = {
-      PageNumber: page,
-      PageSize: pageSize,
-    };
+  // Temp filter states (in popup, not yet applied)
+  const [tempRoleFilter, setTempRoleFilter] = useState(undefined);
+  const [tempStatusFilter, setTempStatusFilter] = useState(undefined);
 
-    const keyword = searchValue.trim();
-    if (keyword) {
-      if (searchField === "username") params.Username = keyword;
-      if (searchField === "fullName") params.FullName = keyword;
-      if (searchField === "email") params.Email = keyword;
-    }
+  // Popover state
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
 
-    if (roleFilter) {
-      params.Role = roleFilter;
-    }
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (roleFilter) count++;
+    if (statusFilter) count++;
+    return count;
+  }, [roleFilter, statusFilter]);
 
-    if (statusFilter) {
-      params.IsActive = statusFilter === "active";
-    }
-
-    return params;
-  };
-
-  const fetchData = async (page = 1, pageSize = 10) => {
-    // ... (logic fetch data cũ) ...
+  const fetchData = async (
+    page = 1,
+    pageSize = 10,
+    overrideRole = "__USE_STATE__",
+    overrideStatus = "__USE_STATE__",
+  ) => {
     setLoading(true);
     try {
-      const res = await userService.getUsers(buildQueryParams(page, pageSize));
+      const params = {
+        PageNumber: page,
+        PageSize: pageSize,
+      };
+
+      const keyword = searchValue.trim();
+      if (keyword) {
+        params.SearchTerm = keyword;
+      }
+
+      const role = overrideRole !== "__USE_STATE__" ? overrideRole : roleFilter;
+      const status =
+        overrideStatus !== "__USE_STATE__" ? overrideStatus : statusFilter;
+
+      if (role) {
+        params.Role = role;
+      }
+
+      if (status) {
+        params.IsActive = status === "active";
+      }
+
+      const res = await userService.getUsers(params);
       const list = res.items || res || [];
       setData(list);
       setPagination({
@@ -91,17 +113,28 @@ const UserManagement = () => {
     fetchData(1, pagination.pageSize);
   }, []);
 
-  const handleApplyFilters = () => {
+  // Search handlers
+  const handleSearch = () => {
     fetchData(1, pagination.pageSize);
   };
 
-  const handleResetFilters = () => {
-    setSearchField("username");
-    setSearchValue("");
-    setRoleFilter(undefined);
-    setStatusFilter(undefined);
-    setShowAdvancedFilters(false);
-    fetchData(1, pagination.pageSize);
+  // Filter popup handlers
+  const handleOpenFilterPopover = () => {
+    setTempRoleFilter(roleFilter);
+    setTempStatusFilter(statusFilter);
+    setFilterPopoverOpen(true);
+  };
+
+  const handleApplyPopoverFilters = () => {
+    setRoleFilter(tempRoleFilter);
+    setStatusFilter(tempStatusFilter);
+    setFilterPopoverOpen(false);
+    fetchData(1, pagination.pageSize, tempRoleFilter, tempStatusFilter);
+  };
+
+  const handleResetPopoverFilters = () => {
+    setTempRoleFilter(undefined);
+    setTempStatusFilter(undefined);
   };
 
   // --- HÀM XỬ LÝ XÓA MỀM (SOFT DELETE / LOCK) ---
@@ -130,6 +163,76 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
+
+  // Filter popover content
+  const filterPopoverContent = (
+    <div style={{ width: 300 }}>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Vai trò
+        </label>
+        <Select
+          value={tempRoleFilter}
+          onChange={setTempRoleFilter}
+          className="w-full"
+          allowClear
+          placeholder="Chọn vai trò"
+          options={[
+            { value: "Admin", label: "Admin" },
+            { value: "Staff", label: "Staff" },
+          ]}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#475569",
+            marginBottom: 6,
+          }}
+        >
+          Trạng thái
+        </label>
+        <Select
+          value={tempStatusFilter}
+          onChange={setTempStatusFilter}
+          className="w-full"
+          allowClear
+          placeholder="Chọn trạng thái"
+          options={[
+            { value: "active", label: "Đang hoạt động" },
+            { value: "inactive", label: "Đã khóa" },
+          ]}
+        />
+      </div>
+
+      <Divider style={{ margin: "12px 0" }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Button icon={<ReloadOutlined />} onClick={handleResetPopoverFilters}>
+          Đặt lại
+        </Button>
+        <Button
+          type="primary"
+          icon={<FilterOutlined />}
+          onClick={handleApplyPopoverFilters}
+        >
+          Áp dụng
+        </Button>
+      </div>
+    </div>
+  );
 
   const columns = [
     {
@@ -223,7 +326,6 @@ const UserManagement = () => {
             />
           </Tooltip>
 
-          {/* Nút Xóa Mềm (Chỉ hiện khi user đang Active) */}
           {record.isActive && (
             <Popconfirm
               title="Khóa tài khoản này?"
@@ -238,7 +340,6 @@ const UserManagement = () => {
             </Popconfirm>
           )}
 
-          {/* (Tùy chọn) Nút Mở khóa nếu user đang Inactive */}
           {!record.isActive && (
             <Popconfirm
               title="Mở khóa tài khoản?"
@@ -264,101 +365,81 @@ const UserManagement = () => {
         Quản lý người dùng
       </h2>
 
-      <div className="mb-4 p-3 md:p-4 bg-gray-50 border border-gray-100 rounded-md">
-        <div className="grid grid-cols-1 md:grid-cols-[180px_1fr_auto] gap-3 items-end">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-              Tìm kiếm theo
-            </label>
-            <Select
-              value={searchField}
-              onChange={setSearchField}
-              className="w-full"
-              options={[
-                { value: "username", label: "Tên đăng nhập" },
-                { value: "fullName", label: "Họ và tên" },
-                { value: "email", label: "Email" },
-              ]}
+      {/* Search bar + Filter button */}
+      <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Tìm kiếm theo tên đăng nhập, họ tên, email..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          onPressEnter={handleSearch}
+          prefix={
+            <SearchOutlined
+              className="text-gray-400 cursor-pointer hover:text-blue-500"
+              onClick={handleSearch}
             />
-          </div>
+          }
+          allowClear
+          style={{ maxWidth: 450 }}
+          size="middle"
+        />
 
-          <div className="md:min-w-[320px]">
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-              Từ khóa
-            </label>
-            <Input
-              placeholder="Nhập từ khóa tìm kiếm..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onPressEnter={handleApplyFilters}
-              prefix={<SearchOutlined className="text-gray-400" />}
-              allowClear
-            />
-          </div>
+        <Popover
+          content={filterPopoverContent}
+          title={
+            <span style={{ fontWeight: 600, fontSize: 15 }}>
+              Bộ lọc nâng cao
+            </span>
+          }
+          trigger="click"
+          open={filterPopoverOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              handleOpenFilterPopover();
+            } else {
+              setFilterPopoverOpen(false);
+            }
+          }}
+          placement="bottomLeft"
+        >
+          <Badge count={activeFilterCount} size="small" offset={[-2, 2]}>
+            <Button icon={<FilterOutlined />} size="middle">
+              Bộ lọc
+            </Button>
+          </Badge>
+        </Popover>
 
-          <Button
-            icon={<FilterOutlined />}
-            onClick={() => setShowAdvancedFilters((prev) => !prev)}
-            className="w-full md:w-auto"
-          >
-            {showAdvancedFilters ? "Ẩn bộ lọc" : "Bộ lọc nâng cao"}
-          </Button>
-        </div>
-
-        {showAdvancedFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-200">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Lọc theo vai trò
-              </label>
-              <Select
-                value={roleFilter}
-                onChange={setRoleFilter}
-                className="w-full"
-                allowClear
-                placeholder="Chọn vai trò"
-                options={[
-                  { value: "Admin", label: "Admin" },
-                  { value: "Staff", label: "Staff" },
-                  { value: "User", label: "User" },
-                ]}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Lọc theo trạng thái
-              </label>
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                className="w-full"
-                allowClear
-                placeholder="Chọn trạng thái"
-                options={[
-                  { value: "active", label: "Đang hoạt động" },
-                  { value: "inactive", label: "Đã khóa" },
-                ]}
-              />
-            </div>
+        {/* Active filter tags */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {roleFilter && (
+              <Tag
+                closable
+                onClose={() => {
+                  setRoleFilter(undefined);
+                  fetchData(1, pagination.pageSize, null, statusFilter);
+                }}
+                color="blue"
+              >
+                Vai trò: {roleFilter}
+              </Tag>
+            )}
+            {statusFilter && (
+              <Tag
+                closable
+                onClose={() => {
+                  setStatusFilter(undefined);
+                  fetchData(1, pagination.pageSize, roleFilter, null);
+                }}
+                color="purple"
+              >
+                {statusFilter === "active" ? "Đang hoạt động" : "Đã khóa"}
+              </Tag>
+            )}
           </div>
         )}
-
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-sm text-gray-600">
-            Tổng số username: <strong>{pagination.total}</strong>
-          </span>
-
-          <div className="flex gap-2">
-            <Button onClick={handleResetFilters}>Đặt lại</Button>
-            <Button type="primary" onClick={handleApplyFilters}>
-              Áp dụng
-            </Button>
-          </div>
-        </div>
       </div>
 
-      {/* Desktop Table - Ẩn trên mobile */}
+      {/* Desktop Table */}
       <div className="hidden md:block">
         <Table
           rowKey="id"
@@ -368,13 +449,14 @@ const UserManagement = () => {
           pagination={{
             ...pagination,
             showSizeChanger: true,
+            pageSizeOptions: ["10", "20", "50"],
             showTotal: (total) => `Tổng ${total} người dùng`,
             onChange: (page, pageSize) => fetchData(page, pageSize),
           }}
         />
       </div>
 
-      {/* Mobile/Tablet View - Chỉ hiện trên mobile */}
+      {/* Mobile/Tablet View */}
       <div className="md:hidden">
         <ResponsiveTable
           columns={columns}

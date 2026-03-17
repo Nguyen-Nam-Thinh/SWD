@@ -35,7 +35,7 @@ const MetricsTable = ({
     {
       title: "STT",
       key: "index",
-      width: 70,
+      width: 60,
       align: "center",
       render: (_, __, index) =>
         ((pagination?.current || 1) - 1) * (pagination?.pageSize || 10) +
@@ -46,7 +46,7 @@ const MetricsTable = ({
       title: "Mã chỉ số",
       dataIndex: "metricCode",
       key: "metricCode",
-      width: 100,
+      width: 120,
       render: (text) => (
         <span className="text-sm text-gray-700">{text || "-"}</span>
       ),
@@ -166,9 +166,10 @@ const MetricsTable = ({
       pagination={{
         ...pagination,
         showSizeChanger: true,
+        pageSizeOptions: ["10", "20", "50"],
         showTotal: (total) => `Tổng ${total} chỉ số`,
       }}
-      onChange={onTableChange}
+      {...(onTableChange ? { onChange: onTableChange } : {})}
     />
   );
 };
