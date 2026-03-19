@@ -101,8 +101,8 @@ const ReportManager = () => {
     setLoading(true);
     try {
       const params = {
-        PageNumber: page,
-        PageSize: pageSize,
+        PageNumber: 1,
+        PageSize: 9999, // Fetch all for client-side date filtering
       };
 
       if (companyKeyword?.trim()) {
@@ -111,28 +111,31 @@ const ReportManager = () => {
 
       const status =
         overrideStatus !== "__USE_STATE__" ? overrideStatus : statusFilter;
-      const dates =
-        overrideDateRange !== "__USE_STATE__" ? overrideDateRange : dateRange;
 
       if (status) {
         params.Status = status;
       }
 
-      if (dates?.[0] && dates?.[1]) {
-        params.FromDate = dates[0]
-          .startOf("day")
-          .format("YYYY-MM-DDTHH:mm:ss");
-        params.ToDate = dates[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
-      }
-
       const response = await reportService.getReports(params);
-      const list = response.items || [];
+      let list = response.items || [];
+
+      // Client-side date filtering (API không hỗ trợ FromDate/ToDate)
+      const dates =
+        overrideDateRange !== "__USE_STATE__" ? overrideDateRange : dateRange;
+      if (dates?.[0] && dates?.[1]) {
+        const from = dates[0].startOf("day");
+        const to = dates[1].endOf("day");
+        list = list.filter((item) => {
+          const uploadDate = dayjs(item.uploadedAt || item.createdAt);
+          return uploadDate.isAfter(from) && uploadDate.isBefore(to);
+        });
+      }
 
       setReports(list);
       setPagination({
-        current: response.pageNumber || page,
-        pageSize: response.pageSize || pageSize,
-        total: response.totalCount || 0,
+        current: page,
+        pageSize: pageSize,
+        total: list.length,
       });
     } catch (error) {
       console.error("Lỗi tải báo cáo:", error);
@@ -183,7 +186,11 @@ const ReportManager = () => {
   };
 
   const handleTableChange = (newPagination) => {
-    fetchReports(newPagination.current, newPagination.pageSize);
+    setPagination((prev) => ({
+      ...prev,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    }));
   };
 
   const handleDelete = async (id, companyName) => {
