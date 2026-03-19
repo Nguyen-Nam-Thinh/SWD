@@ -102,6 +102,9 @@ const ReportApprovalView = ({ reportId, onBack }) => {
 
   const isPendingStatus = (status) =>
     ["PendingApproval", "PENDINGAPPROVAL", "PENDING_APPROVAL"].includes(status);
+
+  const isFinalStatus = (status) =>
+    ["Approved", "APPROVED", "Rejected", "REJECTED"].includes(status);
   // Xử lý "Đã xem xét" - Cập nhật lại dữ liệu details
   const handleReview = async () => {
     if (details.length === 0) {
@@ -156,30 +159,6 @@ const ReportApprovalView = ({ reportId, onBack }) => {
           {reportInfo?.status && <ReportStatusTag status={reportInfo.status} />}
         </div>
 
-        {/* Nút thao tác */}
-        {canApprove && isPendingStatus(reportInfo?.status) && (
-          <Space>
-            <Button onClick={handleReview} loading={processing} size="small">
-              Đã xem xét
-            </Button>
-            <Button
-              type="primary"
-              onClick={handleApprove}
-              loading={processing}
-              size="small"
-            >
-              Duyệt
-            </Button>
-            <Button
-              danger
-              onClick={() => setRejectOpen(true)}
-              loading={processing}
-              size="small"
-            >
-              Từ chối
-            </Button>
-          </Space>
-        )}
       </div>
 
       {/* BODY */}
@@ -198,7 +177,7 @@ const ReportApprovalView = ({ reportId, onBack }) => {
             </span>
             <span className="md:hidden">Chỉ xem</span>
           </div>
-          <div className="p-3 md:p-6">
+          <div className="p-3 md:p-6 flex-1">
             <MetricTable
               data={details}
               loading={loading}
@@ -207,6 +186,29 @@ const ReportApprovalView = ({ reportId, onBack }) => {
               onMetricFocus={handleMetricFocus}
             />
           </div>
+
+          {/* Nút Duyệt / Từ chối - chỉ hiện cho trạng thái Chờ duyệt */}
+          {canApprove && isPendingStatus(reportInfo?.status) && (
+            <div className="sticky bottom-0 border-t border-gray-200 bg-white px-4 md:px-6 py-3 flex justify-end gap-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+              <Button onClick={handleReview} loading={processing}>
+                Đã xem xét
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleApprove}
+                loading={processing}
+              >
+                Duyệt
+              </Button>
+              <Button
+                danger
+                onClick={() => setRejectOpen(true)}
+                loading={processing}
+              >
+                Từ chối
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 

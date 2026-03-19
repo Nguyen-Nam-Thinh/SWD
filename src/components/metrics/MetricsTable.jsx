@@ -78,6 +78,7 @@ const MetricsTable = ({
       title: <div className="text-center">Nhóm</div>,
       key: "groupName",
       width: 170,
+      ellipsis: true,
       render: (_, record) => {
         const groupId =
           record.groupId || record.group?.id || record.metricGroupId;
@@ -92,7 +93,9 @@ const MetricsTable = ({
           "";
         const displayName = formatVietnameseGroupName(name);
         return displayName && displayName !== "-" ? (
-          <Tag>{displayName}</Tag>
+          <Tooltip title={displayName}>
+            <span className="text-gray-600 text-sm">{displayName}</span>
+          </Tooltip>
         ) : (
           "-"
         );
@@ -130,7 +133,11 @@ const MetricsTable = ({
       dataIndex: "description",
       key: "description",
       ellipsis: true,
-      render: (text) => text || "-",
+      render: (text) => (
+        <Tooltip title={text}>
+          <span>{text || "-"}</span>
+        </Tooltip>
+      ),
     },
     {
       // Dùng chuẩn align: 'center' thay vì CSS
@@ -163,6 +170,7 @@ const MetricsTable = ({
       dataSource={metrics}
       rowKey="id"
       loading={loading}
+      scroll={{ x: 1100 }}
       pagination={{
         ...pagination,
         showSizeChanger: true,
